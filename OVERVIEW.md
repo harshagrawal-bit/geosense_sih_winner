@@ -63,10 +63,21 @@ only the pixels inside your box.
 
 ## The models — read this before the viva
 
-**There is no neural network in this prototype.** No GeoRSCLIP, no SAM, no
-TerraMind. They need ~1 GB of downloads and ~2 GB of RAM; this machine has 5 GB
-total with swap already in use. What runs instead is classical statistics — all
-real, all verifiable.
+**There is now one neural network: RemoteCLIP.** It is optional (a checkbox in
+the UI) because it needs ~1.5 GB of RAM. Everything else is classical
+statistics — all real, all verifiable.
+
+| Model | What it does |
+|---|---|
+| **RemoteCLIP ViT-B/32** | CLIP fine-tuned on remote-sensing image–text pairs. **Pretrained — we train nothing.** It scores each candidate on the *change* in similarity to your words: `cos(after, query) − cos(before, query)`. Absolute similarity would just rank cities that were already there. |
+
+Only the shortlist the change detector surfaces gets embedded — 858 ms/chip on
+this CPU means all 256 cells would take seven minutes — so tip-and-cue is
+applied to the expensive *model* the same way it is applied to the expensive
+*sensor*. SAM and TerraMind are still not included; they need more RAM than
+this machine has.
+
+The classical layer, unchanged:
 
 | What | Does what, in plain words |
 |---|---|
@@ -77,7 +88,7 @@ real, all verifiable.
 | **Benjamini–Hochberg** | 256 cells are tested at once, so this caps the share of flagged cells expected to be wrong at your α |
 | **Reciprocal Rank Fusion** | Merges the separate rankings (signature match, change strength, radar) into one list |
 | **Amplitude Dispersion** | Radar measure: low = stable hard surface. Works through monsoon cloud |
-| **Query parser** | Rules, not embeddings. "construction" → expect NDVI to fall, NDBI to rise. The UI shows which rules fired |
+| **Query parser** | Rules. "construction" → expect NDVI to fall, NDBI to rise. The UI shows which rules fired. Runs always; RemoteCLIP re-ranks on top of it |
 
 ---
 
@@ -98,15 +109,36 @@ the engine.
 
 ---
 
+## Measured accuracy
+
+We inject change of a known size into a **real** Sentinel-2 stack (23 dates over
+Gurugram, real noise, real seasons, real cloud gaps) and measure how often the
+detector finds it. Public benchmarks like OSCD and LEVIR-CD are *bi-temporal* —
+two dates and a mask — so they cannot test a detector that needs a 15+ date
+time series; scoring against them would test a different algorithm.
+
+| Injected ΔNDVI | Recall | Precision | Empirical FDR |
+|---|---|---|---|
+| none | — | — | **0 cells flagged in 8 repeats** |
+| 0.04 | 0% | — | 0% |
+| 0.06 | 27% | 100% | 0% |
+| **0.08** | **80%** | **100%** | **0%** |
+| 0.12 | 100% | 100% | 0% |
+| 0.24 | 100% | 100% | 0% |
+
+**Minimum detectable change: ΔNDVI ≈ 0.08 at 80% power.** Empirical false
+discovery rate 0% against a nominal α of 10% — the Benjamini–Hochberg guarantee
+holds, conservatively. Reproduce with `python run_eval.py`.
+
 ## What it has actually produced
 
 | Test | Result |
 |---|---|
-| Synthetic ground truth | 3 planted changes recovered, correct break dates, **0 false positives** across 253 null cells |
 | Jewar, UP — vegetation gain | **2 certified** detections, p = 3.9 × 10⁻⁵ |
 | Jewar, UP — construction | 0 certified; top candidate z = 2.07, radar ADI 0.365 → 0.251 |
 | Simlipal, Odisha | 11 of 28 dates usable (monsoon cloud); 0 certified |
 | Sentinel-1 tier | 14 RTC scenes fetched, ADI computed, hash chain verified |
+| Semantic tier | RemoteCLIP loaded, 4 chip pairs embedded, re-ranked; delta spread −0.007…+0.043 |
 
 > **If a run returns zero certified detections, that is a real answer, not a bug.**
 > With ~15 usable dates and 256 simultaneous tests, only large clean changes clear
@@ -136,6 +168,8 @@ rather than eyeballed.
 
 - Pick a preset area (Jewar, Gurugram, Dholera, Simlipal, Bengaluru) or drag a box on the map.
 - Click a query chip, then **Run analysis**. Start it *before* you need it — it is genuinely downloading satellite data.
-- Tick the Sentinel-1 box to add the radar evidence stream.
+- Tick **Sentinel-1** to add the radar evidence stream.
+- Tick **Semantic re-rank** to bring RemoteCLIP in. First run downloads ~600 MB and needs ~1.5 GB RAM; close Chrome first on this laptop.
+- `python run_eval.py` reproduces the accuracy table above.
 
 Full detail and every honest limitation: `README.md`. Demo running order: `DEMO.md`.

@@ -97,14 +97,24 @@ chain — no server, no network. Everything persists to DuckDB (`app/store.py`).
 
 **Read this before demoing.** These are real limitations, not modesty.
 
-- **Semantic search is a signature parser, not embeddings.** The plan called for
-  GeoRSCLIP / GeoLangBind. Loading a CLIP checkpoint means ~1 GB of downloads
-  and ~2 GB of RAM at inference; this box has 5 GB total with swap already in
-  use, and the budget for this build was under 1 GB. So `app/query.py` maps a
-  query to the *physical signature* the described change produces (NDVI falls,
-  NDBI rises, …). Every rule is inspectable and the UI shows which fired. The
-  embedding tier drops in behind the same interface without touching anything
-  downstream.
+- **Semantic search is now two tiers, and the second is optional.** The rule
+  parser in `app/query.py` always runs and maps a query to the physical
+  signature the change produces (NDVI falls, NDBI rises, …); every rule is
+  inspectable and the UI shows which fired. On top of that, ticking "Semantic
+  re-rank" loads **RemoteCLIP ViT-B/32** (`app/semantic.py`) and reorders the
+  candidate shortlist. It is off by default because it needs ~1.5 GB of RAM on
+  a 5 GB machine, and it degrades back to the rule parser on any failure rather
+  than refusing to run.
+- **The semantic score is a delta, not a similarity.** Asking "does this look
+  like construction?" ranks cities that were already there. Each candidate is
+  embedded twice and scored `cos(after, q) - cos(before, q)`, so only places
+  that *moved toward* the description rank up. CLIP also gets a wider crop
+  (80 px) than the evidence panel (32 px): the tight chip that suits a human
+  reviewer starves a model trained on whole scenes, and widening it lifted the
+  score spread from ±0.004 to -0.007..+0.043.
+- **Semantic power is still limited by chip resolution.** At GRID_PX=256 a cell
+  is ~24 real pixels. The next real improvement is reading the AOI at higher
+  resolution for the chip pass; that is not done.
 - **Substituted infrastructure.** The architecture calls for PostgreSQL 16 +
   PostGIS 3.4 + pgvector and Celery + Redis. This machine has no PostgreSQL, no
   Docker, no Redis and no passwordless sudo, so the prototype uses **DuckDB**
@@ -134,6 +144,27 @@ chain — no server, no network. Everything persists to DuckDB (`app/store.py`).
   tile store; nothing else in the pipeline requires the public internet once
   imagery is cached.
 
+## Measured accuracy
+
+`python run_eval.py` injects change of known size into a real 23-date
+Sentinel-2 stack over Gurugram and measures detection rate. It calls the same
+`change.*` routines the pipeline calls, so it measures the shipped detector.
+
+| Injected ΔNDVI | Recall | Precision | Empirical FDR |
+|---|---|---|---|
+| none (8 repeats) | — | — | **0 cells flagged** |
+| 0.06 | 27% | 100% | 0% |
+| 0.08 | 80% | 100% | 0% |
+| 0.12 | 100% | 100% | 0% |
+
+Minimum detectable change **ΔNDVI ≈ 0.08 at 80% power**; empirical FDR 0%
+against a nominal α of 10%. Results in `data/evaluation.json`.
+
+Public bi-temporal benchmarks (OSCD, LEVIR-CD) are not used, and the reason is
+not convenience: they supply two dates and a mask, whereas this detector needs
+a 15+ date series to fit a seasonal model. Scoring against them would measure a
+different algorithm.
+
 ## One measurement worth knowing about
 
 Earth Search publishes `raster:bands` with `offset = -0.1` on Sentinel-2 L2A
@@ -158,7 +189,9 @@ against known land cover rather than eyeballed.
 app/catalog.py     STAC search across S2 / Landsat / S1
 app/raster.py      windowed COG reads, cloud masking, indices, chips
 app/change.py      harmonic model, changepoint scan, permutation null, ADI
-app/query.py       natural language -> physical change signature
+app/query.py       natural language -> physical change signature (rules)
+app/semantic.py    RemoteCLIP tier: delta-similarity re-ranking (optional)
+app/evaluate.py    semi-synthetic validation harness
 app/rank.py        RRF fusion, context priors, Benjamini-Hochberg
 app/provenance.py  hash-chained audit trail
 app/store.py       DuckDB catalogue
