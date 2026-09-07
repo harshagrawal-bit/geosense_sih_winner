@@ -1,0 +1,290 @@
+<title>Inside GeoSense</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap">
+<style>
+:root{
+  --paper:#f4f6f6; --card:#ffffff; --ink:#1a1f24; --body:#333c44; --dim:#6a757d;
+  --rule:#d7dedd; --veg:#4f6f3d; --built:#9a6c22; --water:#356283; --warn:#8c3b30;
+  --sans:"IBM Plex Sans",system-ui,sans-serif;
+  --serif:"Source Serif 4",Georgia,serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+:root:not([data-theme="light"]){}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#14181b; --card:#1b2024; --ink:#e6eae9; --body:#c3cbcd; --dim:#8b9599;
+    --rule:#2b3237; --veg:#8fae72; --built:#d0a055; --water:#7aa8c9; --warn:#d98070;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#14181b; --card:#1b2024; --ink:#e6eae9; --body:#c3cbcd; --dim:#8b9599;
+  --rule:#2b3237; --veg:#8fae72; --built:#d0a055; --water:#7aa8c9; --warn:#d98070;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--body);
+  font-family:var(--serif);font-size:16.5px;line-height:1.62;
+  -webkit-font-smoothing:antialiased}
+.wrap{max-width:790px;margin:0 auto;padding:44px 22px 80px;
+  display:flex;flex-direction:column;gap:34px}
+header{border-bottom:2px solid var(--ink);padding-bottom:16px}
+.eyebrow{font-family:var(--mono);font-size:11.5px;letter-spacing:.11em;
+  text-transform:uppercase;color:var(--dim);margin:0 0 8px}
+h1{font-family:var(--sans);font-weight:700;font-size:clamp(30px,5vw,40px);
+  line-height:1.08;letter-spacing:-.02em;color:var(--ink);margin:0;text-wrap:balance}
+.lede{margin:12px 0 0;font-size:17.5px;color:var(--body)}
+section{display:flex;flex-direction:column;gap:12px}
+h2{font-family:var(--sans);font-weight:600;font-size:19px;color:var(--ink);
+  margin:0;letter-spacing:-.01em;padding-bottom:7px;border-bottom:1px solid var(--rule)}
+p{margin:0}
+code,.m{font-family:var(--mono);font-size:.87em;color:var(--ink)}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-family:var(--sans);font-size:14px;
+  min-width:460px}
+th{text-align:left;font-weight:600;color:var(--dim);font-size:11.5px;
+  letter-spacing:.07em;text-transform:uppercase;padding:0 12px 7px 0;
+  border-bottom:1px solid var(--rule);white-space:nowrap}
+td{padding:9px 12px 9px 0;border-bottom:1px solid var(--rule);
+  vertical-align:top;color:var(--body)}
+td:first-child{color:var(--ink);font-weight:500;white-space:nowrap}
+td.n{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+.card{background:var(--card);border:1px solid var(--rule);padding:15px 17px;
+  display:flex;flex-direction:column;gap:6px}
+.card h3{font-family:var(--mono);font-size:12px;font-weight:600;margin:0;
+  letter-spacing:.04em;color:var(--ink)}
+.card p{font-size:14.5px;line-height:1.5}
+.tag{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;
+  text-transform:uppercase;padding:2px 7px;border:1px solid currentColor;
+  align-self:flex-start}
+.t-real{color:var(--veg)} .t-demo{color:var(--built)}
+figure{margin:0;display:flex;flex-direction:column;gap:9px}
+figure svg{width:100%;height:auto;color:var(--ink)}
+figcaption{font-family:var(--sans);font-size:13px;color:var(--dim);line-height:1.5}
+ul{margin:0;padding-left:19px;display:flex;flex-direction:column;gap:7px}
+li::marker{color:var(--dim)}
+.note{border-left:3px solid var(--warn);padding:11px 0 11px 15px;
+  background:transparent}
+.note strong{color:var(--ink);font-family:var(--sans);font-weight:600}
+.run{font-family:var(--mono);font-size:13.5px;background:var(--card);
+  border:1px solid var(--rule);padding:11px 14px;color:var(--ink);overflow-x:auto}
+.kicker{font-family:var(--sans);font-weight:600;color:var(--ink)}
+footer{font-family:var(--sans);font-size:13px;color:var(--dim);
+  border-top:1px solid var(--rule);padding-top:14px}
+</style>
+
+<div class="wrap">
+
+<header>
+  <p class="eyebrow">SIH26227 · Team VARCHASVA</p>
+  <h1>Inside GeoSense</h1>
+  <p class="lede">What was built, what it runs on, and — the part that matters most
+  in a viva — which parts are real and which are stand-ins.</p>
+</header>
+
+<section>
+  <h2>Two separate things in the folder</h2>
+  <div class="two">
+    <div class="card">
+      <span class="tag t-demo">scripted</span>
+      <h3>index.html</h3>
+      <p>The pitch demo. One file, opens by double-click, no internet. Six
+      detections that are <em>seeded fixtures</em>, and satellite scenes drawn
+      procedurally in JavaScript. Built for the 12-minute talk.</p>
+    </div>
+    <div class="card">
+      <span class="tag t-real">live data</span>
+      <h3>app/ — run with ./run.sh</h3>
+      <p>The working prototype. ~1,900 lines. Searches the real satellite
+      archives per query, downloads real pixels, does real statistics.
+      A run takes 60–330 seconds.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>How a query becomes a detection</h2>
+  <figure>
+    <svg viewBox="0 0 700 500" role="img" aria-label="Data flows from three satellite archives into catalog.py, then raster.py, change.py, rank.py and out to the FastAPI console, with query.py feeding weights in and provenance plus DuckDB recording each run.">
+      <defs>
+        <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6"
+                markerHeight="6" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+        </marker>
+      </defs>
+      <g font-family="IBM Plex Mono, monospace" font-size="11.5" fill="currentColor">
+
+        <!-- sources -->
+        <g stroke="currentColor" stroke-width="1" fill="none" opacity=".55">
+          <rect x="14" y="14" width="216" height="46"/>
+          <rect x="242" y="14" width="216" height="46"/>
+          <rect x="470" y="14" width="216" height="46"/>
+        </g>
+        <text x="122" y="34" text-anchor="middle" font-size="12">Sentinel-2 L2A</text>
+        <text x="122" y="49" text-anchor="middle" font-size="10" opacity=".65">Earth Search · AWS</text>
+        <text x="350" y="34" text-anchor="middle" font-size="12">Landsat C2 L2</text>
+        <text x="350" y="49" text-anchor="middle" font-size="10" opacity=".65">Planetary Computer</text>
+        <text x="578" y="34" text-anchor="middle" font-size="12">Sentinel-1 RTC</text>
+        <text x="578" y="49" text-anchor="middle" font-size="10" opacity=".65">Planetary Computer</text>
+
+        <!-- bus into catalog -->
+        <g stroke="currentColor" stroke-width="1.2" fill="none">
+          <path d="M122,60 L122,76 M350,60 L350,76 M578,60 L578,76"/>
+          <path d="M122,76 L578,76"/>
+          <path d="M350,76 L350,96" marker-end="url(#ar)"/>
+        </g>
+
+        <!-- main chain -->
+        <g stroke="currentColor" stroke-width="1.4" fill="none">
+          <rect x="150" y="98" width="400" height="52"/>
+          <rect x="150" y="192" width="400" height="60"/>
+          <rect x="150" y="294" width="400" height="60"/>
+          <rect x="150" y="396" width="400" height="52"/>
+        </g>
+        <text x="350" y="120" text-anchor="middle" font-weight="600">catalog.py</text>
+        <text x="350" y="138" text-anchor="middle" font-size="10.5" opacity=".7">searches the archive for scenes over your box</text>
+
+        <text x="350" y="214" text-anchor="middle" font-weight="600">raster.py</text>
+        <text x="350" y="231" text-anchor="middle" font-size="10.5" opacity=".7">downloads only the AOI window · masks cloud</text>
+        <text x="350" y="245" text-anchor="middle" font-size="10.5" opacity=".7">computes NDVI · NDBI · MNDWI · BSI</text>
+
+        <text x="350" y="316" text-anchor="middle" font-weight="600">change.py</text>
+        <text x="350" y="333" text-anchor="middle" font-size="10.5" opacity=".7">removes the seasonal cycle · finds the break</text>
+        <text x="350" y="347" text-anchor="middle" font-size="10.5" opacity=".7">builds a null by shuffling time</text>
+
+        <text x="350" y="418" text-anchor="middle" font-weight="600">rank.py</text>
+        <text x="350" y="436" text-anchor="middle" font-size="10.5" opacity=".7">fuses the evidence · controls false discoveries</text>
+
+        <!-- arrows between -->
+        <g stroke="currentColor" stroke-width="1.2" fill="none">
+          <path d="M350,150 L350,190" marker-end="url(#ar)"/>
+          <path d="M350,252 L350,292" marker-end="url(#ar)"/>
+          <path d="M350,354 L350,394" marker-end="url(#ar)"/>
+          <path d="M350,448 L350,478" marker-end="url(#ar)"/>
+        </g>
+        <text x="358" y="176" font-size="10.5" opacity=".8">~26 scenes</text>
+        <text x="358" y="278" font-size="10.5" opacity=".8">256 grid cells, each with a time series</text>
+        <text x="358" y="380" font-size="10.5" opacity=".8">a score and a p-value per cell</text>
+        <text x="358" y="470" font-size="10.5" opacity=".8">ranked detections → map + before/after chips</text>
+
+        <!-- query.py in -->
+        <g stroke="currentColor" stroke-width="1" fill="none" opacity=".8">
+          <rect x="8" y="294" width="118" height="60"/>
+          <path d="M126,324 L148,324" marker-end="url(#ar)" stroke-width="1.2" opacity="1"/>
+        </g>
+        <text x="67" y="316" text-anchor="middle" font-weight="600">query.py</text>
+        <text x="67" y="333" text-anchor="middle" font-size="10" opacity=".7">your words →</text>
+        <text x="67" y="345" text-anchor="middle" font-size="10" opacity=".7">index weights</text>
+
+        <!-- provenance / store out -->
+        <g stroke="currentColor" stroke-width="1" fill="none" opacity=".8">
+          <rect x="574" y="294" width="118" height="60"/>
+          <path d="M552,324 L572,324" marker-end="url(#ar)" stroke-width="1.2" opacity="1"/>
+        </g>
+        <text x="633" y="316" text-anchor="middle" font-weight="600">provenance</text>
+        <text x="633" y="333" text-anchor="middle" font-size="10" opacity=".7">hash-chains</text>
+        <text x="633" y="345" text-anchor="middle" font-size="10" opacity=".7">every step</text>
+
+        <g stroke="currentColor" stroke-width="1" fill="none" opacity=".8">
+          <rect x="574" y="396" width="118" height="52"/>
+          <path d="M552,422 L572,422" marker-end="url(#ar)" stroke-width="1.2" opacity="1"/>
+        </g>
+        <text x="633" y="418" text-anchor="middle" font-weight="600">store.py</text>
+        <text x="633" y="435" text-anchor="middle" font-size="10" opacity=".7">DuckDB catalogue</text>
+      </g>
+    </svg>
+    <figcaption>Nothing is pre-downloaded. Each run searches the live archives,
+    streams only the pixels inside your box, and records what it used.</figcaption>
+  </figure>
+</section>
+
+<section>
+  <h2>The models — read this before the viva</h2>
+  <p><span class="kicker">There is no neural network in this prototype.</span>
+  No GeoRSCLIP, no SAM, no TerraMind. They needed ~1&nbsp;GB of downloads and
+  ~2&nbsp;GB of RAM; the machine has 5&nbsp;GB total with swap already in use.
+  What runs instead is classical statistics, and it is all real and all
+  verifiable:</p>
+  <div class="scroll">
+  <table>
+    <thead><tr><th>What</th><th>Does what, in plain words</th></tr></thead>
+    <tbody>
+      <tr><td>Spectral indices</td><td>NDVI (vegetation), NDBI (built-up), MNDWI (water), BSI (bare soil) — simple band ratios that turn colour into a physical quantity.</td></tr>
+      <tr><td>Harmonic model</td><td>Fits the yearly green-up/dry-down cycle to each cell and subtracts it, so seasons don't get mistaken for change.</td></tr>
+      <tr><td>Changepoint scan</td><td>Tries every possible split date and keeps the one where before and after differ most.</td></tr>
+      <tr><td>Permutation test</td><td>Shuffles the dates to see how big a "change" pure noise can fake. That becomes the yardstick.</td></tr>
+      <tr><td>Benjamini–Hochberg</td><td>Because 256 cells are tested at once, this caps the share of flagged cells expected to be wrong at your α.</td></tr>
+      <tr><td>Reciprocal Rank Fusion</td><td>Merges the separate rankings (signature match, change strength, radar) into one ordered list.</td></tr>
+      <tr><td>Amplitude Dispersion</td><td>Radar measure: low value = a stable hard surface. Works through monsoon cloud.</td></tr>
+      <tr><td>Query parser</td><td>Rules, not embeddings. "construction" → expect NDVI to fall and NDBI to rise. The UI shows which rules fired.</td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<section>
+  <h2>What it runs on</h2>
+  <div class="scroll">
+  <table>
+    <thead><tr><th>Layer</th><th>Used</th><th>Instead of</th></tr></thead>
+    <tbody>
+      <tr><td>API</td><td>FastAPI + uvicorn</td><td>—</td></tr>
+      <tr><td>Imagery</td><td>rasterio / GDAL, pystac-client</td><td>—</td></tr>
+      <tr><td>Maths</td><td>NumPy only</td><td>—</td></tr>
+      <tr><td>Database</td><td>DuckDB</td><td>PostgreSQL + PostGIS + pgvector</td></tr>
+      <tr><td>Job queue</td><td>Python thread pool</td><td>Celery + Redis</td></tr>
+      <tr><td>Map UI</td><td>MapLibre GL (vendored offline)</td><td>React + deck.gl</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p>The two substitutions are because this laptop has no Docker, no PostgreSQL
+  and no passwordless sudo. Both are one-module swaps — nothing above them
+  depends on the engine.</p>
+</section>
+
+<section>
+  <h2>What it has actually produced</h2>
+  <div class="scroll">
+  <table>
+    <thead><tr><th>Test</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td>Synthetic ground truth</td><td class="n">3 planted changes recovered, correct break dates, 0 false positives across 253 null cells</td></tr>
+      <tr><td>Jewar, UP — vegetation gain</td><td class="n">2 certified detections, p = 3.9 × 10⁻⁵</td></tr>
+      <tr><td>Jewar, UP — construction</td><td class="n">0 certified; top candidate z = 2.07, radar ADI 0.365 → 0.251</td></tr>
+      <tr><td>Simlipal, Odisha</td><td class="n">11 of 28 dates usable (monsoon cloud); 0 certified</td></tr>
+      <tr><td>Sentinel-1 tier</td><td class="n">14 RTC scenes fetched, ADI computed, chain verified</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="note">
+    <p><strong>If a run returns zero certified detections, that is a real answer, not a bug.</strong>
+    With ~15 usable dates and 256 simultaneous tests, only large clean changes
+    clear FDR control at α = 0.10. Candidates below the line are still listed with
+    their p-values. Saying this out loud is stronger than pretending otherwise.</p>
+  </div>
+</section>
+
+<section>
+  <h2>One bug worth mentioning if asked</h2>
+  <p>The satellite catalogue tells you to subtract 0.1 from Sentinel-2
+  reflectance. Applying it to this collection is wrong — over 0%-cloud Western
+  Ghats forest it produced <span class="m">blue = −0.067</span> and
+  <span class="m">NDVI = 2.145</span>, both physically impossible. Without it:
+  <span class="m">blue = 0.033</span>, <span class="m">NDVI = 0.818</span> —
+  textbook dense forest. It was silently corrupting every index while still
+  drawing plausible-looking maps, which is exactly why the pipeline is checked
+  against known land cover rather than eyeballed.</p>
+</section>
+
+<section>
+  <h2>Running it</h2>
+  <div class="run">./run.sh&nbsp;&nbsp;&nbsp;→&nbsp;&nbsp;http://127.0.0.1:8008</div>
+  <ul>
+    <li>Pick a preset area (Jewar, Gurugram, Dholera, Simlipal, Bengaluru) or drag a box on the map.</li>
+    <li>Click a query chip, then <span class="kicker">Run analysis</span>. Start it before you need it — it is genuinely downloading satellite data.</li>
+    <li>Tick the Sentinel-1 box to add the radar evidence stream.</li>
+  </ul>
+</section>
+
+<footer>Full detail, including every honest limitation, is in
+<span class="m">README.md</span>. Demo running order is in <span class="m">DEMO.md</span>.</footer>
+
+</div>

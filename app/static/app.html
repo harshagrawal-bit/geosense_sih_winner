@@ -1,0 +1,458 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GeoSense — Analyst Console</title>
+<link rel="stylesheet" href="/static/vendor/maplibre-gl.css">
+<style>
+:root{--bg:#15171b;--panel:#1c1f25;--panel2:#232730;--line:#31353f;--line2:#3d424c;
+ --txt:#dbd8d2;--dim:#9a9ea7;--dim2:#71767f;--steel:#6f97b8;--ochre:#c1954f;
+ --brick:#b6584c;--moss:#86a06a;--mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+*{box-sizing:border-box}html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--txt);font:13px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overflow:hidden}
+button,input,select{font:inherit;color:inherit}
+button{background:none;border:none;cursor:pointer}
+header{height:50px;display:flex;align-items:center;gap:14px;padding:0 15px;border-bottom:1px solid var(--line);background:#191c21}
+.logo{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:600}
+.logo i{width:9px;height:9px;background:var(--ochre);display:block}
+.sub{font-size:11px;color:var(--dim2);border-left:1px solid var(--line);padding-left:14px}
+header .sp{flex:1}
+.badge{font-size:11px;padding:4px 9px;border:1px solid var(--line);background:#1e2127;color:var(--dim);border-radius:3px}
+.badge b{color:var(--txt);font-weight:500}
+.wrap{display:grid;grid-template-columns:352px 1fr 340px;height:calc(100vh - 50px)}
+.col{overflow-y:auto}.col::-webkit-scrollbar{width:9px}
+.col::-webkit-scrollbar-thumb{background:#343943}.col::-webkit-scrollbar-track{background:#1a1d22}
+.left{border-right:1px solid var(--line);background:var(--panel)}
+.right{border-left:1px solid var(--line);background:var(--panel)}
+.mid{position:relative;background:#0d0f13}
+#map{position:absolute;inset:0}
+.sec{padding:12px 14px;border-bottom:1px solid var(--line)}
+.sec h3{margin:0 0 10px;font-size:11.5px;color:var(--dim);font-weight:600;padding-bottom:6px;border-bottom:1px solid var(--line)}
+label{display:block;font-size:10.5px;color:var(--dim2);margin:8px 0 3px}
+input[type=text],input[type=number],select{width:100%;background:#121418;border:1px solid var(--line2);border-radius:3px;padding:7px 9px;outline:none}
+input:focus,select:focus{border-color:var(--steel)}
+.row2{display:flex;gap:7px}.row2>*{flex:1}
+.btn{background:#39414c;border:1px solid #49525e;border-radius:3px;padding:8px 12px;font-weight:500;width:100%;margin-top:11px}
+.btn:hover{background:#434c58}.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.alt{background:#22262d;margin-top:7px;font-weight:400}
+.btn.on{background:var(--ochre);color:#1a1408;border-color:var(--ochre)}
+.chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.chip{font-size:11px;color:var(--dim);background:#1f232a;border:1px solid var(--line);border-radius:3px;padding:4px 7px}
+.chip:hover{color:var(--txt);border-color:var(--line2)}
+.stage{display:flex;align-items:center;gap:9px;padding:5px 0;opacity:.4}
+.stage.on{opacity:1}
+.stage i{width:20px;height:20px;border:1px solid var(--line);background:#1f232a;font:10px/18px var(--mono);text-align:center;color:var(--dim2);flex:none}
+.stage.on i{color:var(--txt)}
+.stage .n{font-size:12px;font-weight:600}.stage .d{font-size:10.5px;color:var(--dim2)}
+.pbar{height:3px;background:#252932;margin:9px 0}
+.pbar i{display:block;height:100%;width:0;background:var(--steel);transition:width .3s}
+.msg{font:10.5px/1.6 var(--mono);color:var(--dim2);margin-top:7px;min-height:16px}
+.err{color:#cf7368;font-size:11.5px;line-height:1.55;background:#2c1f1d;border:1px solid #5e3630;padding:8px 10px;border-radius:3px;margin-top:9px}
+.res{padding:8px 10px;border:1px solid var(--line);border-left:3px solid var(--line2);background:#1f232a;margin-bottom:6px;cursor:pointer;position:relative}
+.res:hover{background:#242932}.res.sel{background:#262b34;border-left-color:var(--ochre)}
+.res.cert{border-left-color:var(--moss)}
+.res .t{font-size:12px;font-weight:600}
+.res .m{font:10.5px var(--mono);color:var(--dim2);margin-top:2px}
+.res .b{display:flex;gap:6px;align-items:center;margin-top:7px}
+.pill{font-size:9.5px;padding:2px 6px;border:1px solid;border-radius:2px;font-weight:600}
+.p-c{color:#93ad76;border-color:#3f5232;background:#1e2619}
+.p-u{color:#c9a061;border-color:#5a4a2c;background:#2a251b}
+.res .cf{margin-left:auto;font:12px var(--mono)}
+.kv{display:flex;justify-content:space-between;font-size:11.5px;padding:4px 0;border-bottom:1px solid #262a32}
+.kv:last-child{border:0}.kv span{color:var(--dim2)}.kv b{font:11px var(--mono);font-weight:400}
+.pair{display:flex;gap:8px}.pair figure{flex:1;margin:0}
+.pair img{width:100%;display:block;border:1px solid var(--line2);background:#000}
+.pair figcaption{font:9.5px var(--mono);color:var(--dim2);margin-top:4px}
+.node{position:relative;padding:0 0 10px 15px;border-left:1px solid var(--line2);margin-left:4px}
+.node:last-child{border-color:transparent}
+.node::before{content:"";position:absolute;left:-4px;top:3px;width:7px;height:7px;background:var(--panel);border:1.5px solid var(--dim2)}
+.node .t{font-size:11.5px;font-weight:600}
+.node .h{font:9.5px var(--mono);color:#5d626b;word-break:break-all}
+.flow{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+.flow .f{border:1px solid var(--line);background:#1f232a;padding:8px 7px;min-width:0}
+.flow .f b{display:block;font:600 10px var(--mono);color:var(--ochre)}
+.flow .f strong{display:block;font:600 16px var(--mono);margin-top:5px}
+.flow .f span{display:block;color:var(--dim2);font-size:9.5px;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.empty{color:var(--dim2);font-size:11.5px;padding:18px 2px;line-height:1.6}
+.hint{position:absolute;left:12px;top:12px;z-index:5;background:rgba(21,23,27,.9);border:1px solid var(--line2);padding:7px 11px;font-size:11.5px;border-radius:3px}
+.legend{position:absolute;right:12px;bottom:22px;z-index:5;background:rgba(21,23,27,.9);border:1px solid var(--line2);padding:8px 10px;font-size:10.5px;border-radius:3px}
+.legend div{display:flex;align-items:center;gap:6px;margin:3px 0}
+.legend s{width:11px;height:11px;display:block;text-decoration:none}
+.basemap{position:absolute;left:12px;bottom:22px;z-index:5;display:flex;gap:2px;border:1px solid var(--line2);border-radius:3px;overflow:hidden}
+.basemap button{background:rgba(21,23,27,.9);padding:5px 10px;font-size:11px;color:var(--dim);border-right:1px solid var(--line2)}
+.basemap button:last-child{border:0}.basemap button.on{background:#39414c;color:var(--txt)}
+svg.chart{width:100%;height:150px;display:block}
+.tag{font:9.5px var(--mono);color:var(--dim2)}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo"><i></i>GeoSense</div>
+  <div class="sub">Semantic Retrieval &amp; Multi-Temporal Change Analysis<br>SIH26227 · Team VARCHASVA</div>
+  <div class="sp"></div>
+  <div class="badge" id="srcBadge">sources: <b>Sentinel-2 L2A</b></div>
+  <div class="badge" id="dbBadge">catalogue: <b>—</b></div>
+</header>
+
+<div class="wrap">
+  <!-- ============ LEFT ============ -->
+  <div class="col left">
+    <div class="sec">
+      <h3>1 · Query</h3>
+      <input type="text" id="q" value="new construction and built-up expansion in the last 30 months">
+      <div class="chips">
+        <button class="chip" data-q="new construction and built-up expansion in the last 30 months">construction</button>
+        <button class="chip" data-q="deforestation and forest clearing in the last 24 months">deforestation</button>
+        <button class="chip" data-q="flooding and inundation in the last 18 months">flooding</button>
+        <button class="chip" data-q="loss of a water body over the last 24 months">water loss</button>
+        <button class="chip" data-q="quarrying and bare ground in the last 24 months">quarrying</button>
+        <button class="chip" data-q="new road corridor through vegetation in the last 24 months">new road</button>
+      </div>
+      <div id="parsed" class="msg"></div>
+    </div>
+
+    <div class="sec">
+      <h3>2 · Area of interest</h3>
+      <button class="btn alt" id="drawBtn">Draw AOI on the map</button>
+      <label>bbox — west, south, east, north</label>
+      <input type="text" id="bbox" value="77.54, 28.13, 77.62, 28.20">
+      <div class="chips">
+        <button class="chip" data-bbox="77.54,28.13,77.62,28.20">Jewar, UP</button>
+        <button class="chip" data-bbox="77.00,28.35,77.10,28.45">Gurugram</button>
+        <button class="chip" data-bbox="72.15,22.20,72.28,22.32">Dholera, GJ</button>
+        <button class="chip" data-bbox="86.30,21.90,86.42,22.02">Simlipal, OD</button>
+        <button class="chip" data-bbox="77.60,12.90,77.72,13.00">Bengaluru E</button>
+      </div>
+    </div>
+
+    <div class="sec">
+      <h3>3 · Parameters</h3>
+      <div class="row2">
+        <div><label>Max scenes</label><input type="number" id="maxsc" value="24" min="10" max="40"></div>
+        <div><label>Cloud limit %</label><input type="number" id="cloud" value="45" min="5" max="90"></div>
+      </div>
+      <div class="row2">
+        <div><label>Risk α (FDR)</label><input type="number" id="alpha" value="0.10" step="0.01" min="0.01" max="0.5"></div>
+        <div><label>Sensors</label>
+          <select id="src">
+            <option value="sentinel-2-l2a">Sentinel-2 L2A</option>
+            <option value="sentinel-2-l2a,landsat-c2-l2">Sentinel-2 + Landsat C2</option>
+            <option value="landsat-c2-l2">Landsat C2 L2 only</option>
+          </select>
+        </div>
+      </div>
+      <label style="display:flex;align-items:center;gap:7px;margin-top:10px;color:var(--dim)">
+        <input type="checkbox" id="sar" style="width:auto"> Add Sentinel-1 SAR tier (ADI, cloud-independent)
+      </label>
+      <button class="btn" id="runBtn">Run analysis</button>
+      <div class="pbar"><i id="pbar"></i></div>
+      <div class="stage" id="s1"><i>01</i><div><div class="n">Discover</div><div class="d">STAC search · windowed COG reads</div></div></div>
+      <div class="stage" id="s2"><i>02</i><div><div class="n">Prioritise</div><div class="d">Harmonic model · RRF fusion</div></div></div>
+      <div class="stage" id="s3"><i>03</i><div><div class="n">Verify</div><div class="d">Permutation null · BH at α</div></div></div>
+      <div class="msg" id="msg"></div>
+      <div id="err"></div>
+    </div>
+
+    <div class="sec" style="border:0">
+      <h3>4 · Detections <span id="dcount" class="tag"></span></h3>
+      <div id="results"><div class="empty">Draw an AOI, describe the change you are looking for, and run.</div></div>
+    </div>
+  </div>
+
+  <!-- ============ CENTRE ============ -->
+  <div class="mid">
+    <div id="map"></div>
+    <div class="hint" id="hint">Pick a preset AOI or draw one, then run.</div>
+    <div class="basemap">
+      <button data-bm="imagery" class="on">Imagery</button>
+      <button data-bm="osm">Street</button>
+      <button data-bm="bhuvan">Bhuvan (ISRO)</button>
+      <button data-bm="none">None</button>
+    </div>
+    <div class="legend">
+      <div><s style="background:#86a06a"></s>certified (FDR ≤ α)</div>
+      <div><s style="background:#c1954f"></s>candidate</div>
+      <div><s style="border:1px solid #6f97b8"></s>AOI</div>
+    </div>
+  </div>
+
+  <!-- ============ RIGHT ============ -->
+  <div class="col right">
+    <div class="sec"><h3>Semantic retrieval</h3><div id="semantic"><div class="empty">No run yet.</div></div></div>
+    <div class="sec"><h3>TIP → CUE → CONFIRM</h3><div id="flow"><div class="empty">No run yet.</div></div></div>
+    <div class="sec"><h3>Run summary</h3><div id="summary"><div class="empty">No run yet.</div></div></div>
+    <div class="sec"><h3>Evidence</h3><div id="evidence"><div class="empty">Select a detection.</div></div></div>
+    <div class="sec" style="border:0"><h3>Provenance · hash chain</h3><div id="prov"><div class="empty">—</div></div></div>
+  </div>
+</div>
+
+<script src="/static/vendor/maplibre-gl.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+let RES=null, SEL=-1, drawing=false, dragStart=null, DETF=[];
+
+/* ---------------- basemaps ---------------- */
+const BM={
+ imagery:{tiles:["https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"],attribution:"Esri World Imagery"},
+ osm:{tiles:["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],attribution:"© OpenStreetMap"},
+ bhuvan:{tiles:["https://bhuvan-vec2.nrsc.gov.in/bhuvan/wms?service=WMS&version=1.1.0&request=GetMap&layers=india3&styles=&format=image/png&transparent=true&srs=EPSG:3857&width=256&height=256&bbox={bbox-epsg-3857}"],attribution:"NRSC/ISRO Bhuvan"},
+ none:null
+};
+const style={version:8,sources:{},layers:[{id:"bg",type:"background",paint:{"background-color":"#0d0f13"}}]};
+const map=new maplibregl.Map({container:"map",style,center:[78.9,22.6],zoom:4.2,attributionControl:{compact:true}});
+map.addControl(new maplibregl.NavigationControl({showCompass:false}),"top-right");
+map.addControl(new maplibregl.ScaleControl({unit:"metric"}),"bottom-right");
+
+function setBasemap(k){
+  if(map.getLayer("bm")) map.removeLayer("bm");
+  if(map.getSource("bm")) map.removeSource("bm");
+  if(BM[k]){ map.addSource("bm",{type:"raster",tiles:BM[k].tiles,tileSize:256,attribution:BM[k].attribution});
+    // insert UNDER the detection layers - inserting before "aoi-line" puts the
+    // raster above det-fill/det-line and silently hides every detection
+    const under=["det-fill","det-line","aoi-line"].find(l=>map.getLayer(l));
+    map.addLayer({id:"bm",type:"raster",source:"bm"},under); }
+}
+document.querySelectorAll(".basemap button").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll(".basemap button").forEach(x=>x.classList.remove("on"));
+  b.classList.add("on"); setBasemap(b.dataset.bm);});
+
+map.on("load",()=>{
+  map.addSource("aoi",{type:"geojson",data:fc([])});
+  map.addSource("det",{type:"geojson",data:fc([])});
+  map.addLayer({id:"det-fill",type:"fill",source:"det",
+    paint:{"fill-color":["case",["get","certified"],"#86a06a","#c1954f"],
+           "fill-opacity":["case",["get","sel"],0.30,
+             ["interpolate",["linear"],["get","conf"],50,0.15,100,0.45]]}});
+  map.addLayer({id:"det-line",type:"line",source:"det",
+    paint:{"line-color":["case",["get","sel"],"#ffffff",["case",["get","certified"],"#86a06a","#c1954f"]],
+           "line-width":["case",["get","sel"],3,1.6],
+           "line-opacity":0.95}});
+  map.addLayer({id:"aoi-line",type:"line",source:"aoi",
+    paint:{"line-color":"#6f97b8","line-width":1.6,"line-dasharray":[3,2]}});
+  setBasemap("imagery");
+  MAP_OK=true; mapQueue.splice(0).forEach(f=>{try{f();}catch(e){console.warn(e);}});
+  drawAOIFromInput();
+  map.on("click","det-fill",e=>{const i=e.features[0].properties.idx; select(+i);});
+  map.on("mouseenter","det-fill",()=>map.getCanvas().style.cursor="pointer");
+  map.on("mouseleave","det-fill",()=>map.getCanvas().style.cursor="");
+});
+
+const fc=f=>({type:"FeatureCollection",features:f});
+/* The analysis panels must work even if WebGL is unavailable, so every map
+   call goes through here and a dead map degrades to a table-only console. */
+let MAP_OK=false, mapQueue=[];
+function withMap(fn){ if(MAP_OK){try{fn();}catch(e){console.warn(e);} } else mapQueue.push(fn); }
+const rect=b=>({type:"Feature",properties:{},geometry:{type:"Polygon",coordinates:[[
+  [b[0],b[1]],[b[2],b[1]],[b[2],b[3]],[b[0],b[3]],[b[0],b[1]]]]}});
+
+function parseBbox(){const v=$("bbox").value.split(/[, ]+/).map(Number).filter(n=>!isNaN(n));
+  return v.length===4?v:null;}
+function drawAOIFromInput(fit){
+  const b=parseBbox(); if(!b||!MAP_OK||!map.getSource("aoi"))return;
+  map.getSource("aoi").setData(fc([rect(b)]));
+  if(fit!==false) map.fitBounds([[b[0],b[1]],[b[2],b[3]]],{padding:70,duration:600});
+}
+$("bbox").addEventListener("change",()=>drawAOIFromInput());
+document.querySelectorAll(".chip[data-bbox]").forEach(b=>b.onclick=()=>{
+  $("bbox").value=b.dataset.bbox.split(",").join(", ");drawAOIFromInput();});
+document.querySelectorAll(".chip[data-q]").forEach(b=>b.onclick=()=>{$("q").value=b.dataset.q;});
+
+/* ---------------- draw AOI by dragging ---------------- */
+$("drawBtn").onclick=()=>{
+  drawing=!drawing;
+  $("drawBtn").classList.toggle("on",drawing);
+  map.dragPan[drawing?"disable":"enable"]();
+  map.getCanvas().style.cursor=drawing?"crosshair":"";
+  $("hint").textContent=drawing?"Drag on the map to draw the AOI.":"Pick a preset AOI or draw one, then run.";
+};
+map.on("mousedown",e=>{if(!drawing)return;dragStart=e.lngLat;});
+map.on("mousemove",e=>{
+  if(!drawing||!dragStart||!MAP_OK)return;
+  const b=[Math.min(dragStart.lng,e.lngLat.lng),Math.min(dragStart.lat,e.lngLat.lat),
+           Math.max(dragStart.lng,e.lngLat.lng),Math.max(dragStart.lat,e.lngLat.lat)];
+  map.getSource("aoi").setData(fc([rect(b)]));
+  $("bbox").value=b.map(v=>v.toFixed(4)).join(", ");
+});
+map.on("mouseup",()=>{if(!drawing)return;dragStart=null;drawing=false;
+  $("drawBtn").classList.remove("on");map.dragPan.enable();map.getCanvas().style.cursor="";
+  $("hint").textContent="AOI set. Run the analysis.";});
+
+/* ---------------- run ---------------- */
+$("runBtn").onclick=async()=>{
+  const bbox=parseBbox();
+  if(!bbox){$("err").innerHTML='<div class="err">bbox must be four numbers: west, south, east, north.</div>';return;}
+  $("err").innerHTML="";$("results").innerHTML='<div class="empty">Running…</div>';
+  $("dcount").textContent="";RES=null;SEL=-1;
+  DETF=[]; withMap(()=>map.getSource("det").setData(fc([])));
+  $("runBtn").disabled=true;$("runBtn").textContent="Running…";
+  try{
+    const r=await fetch("/api/run",{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({bbox,query:$("q").value,alpha:+$("alpha").value,
+        cloud:+$("cloud").value,max_scenes:+$("maxsc").value,
+        sources:$("src").value.split(","),use_sar:$("sar").checked})});
+    if(!r.ok){const t=await r.json();throw new Error(t.detail||"request rejected");}
+    poll((await r.json()).job);
+  }catch(ex){fail(ex.message);}
+};
+function fail(m){$("err").innerHTML='<div class="err">'+m+"</div>";
+  $("runBtn").disabled=false;$("runBtn").textContent="Run analysis";
+  $("results").innerHTML='<div class="empty">No detections.</div>';}
+
+const STAGE={discover:"s1",prioritise:"s2",verify:"s3",done:"s3"};
+async function poll(job){
+  const r=await(await fetch("/api/job/"+job)).json();
+  $("pbar").style.width=(r.pct||0)+"%";
+  $("msg").textContent=r.message||"";
+  ["s1","s2","s3"].forEach(s=>$(s).classList.remove("on"));
+  const cur=STAGE[r.stage]; if(cur){["s1","s2","s3"].forEach(s=>{if(s<=cur)$(s).classList.add("on");});}
+  if(r.state==="running"){setTimeout(()=>poll(job),700);return;}
+  $("runBtn").disabled=false;$("runBtn").textContent="Run analysis";
+  if(r.state==="error"||!r.result||!r.result.ok){fail((r.result&&r.result.error)||r.message||"failed");
+    if(r.result&&r.result.query)showParsed(r.result.query);return;}
+  render(r.result);
+}
+
+/* ---------------- render ---------------- */
+function showParsed(q){$("parsed").innerHTML=q.explain.map(e=>"› "+e).join("<br>");}
+
+function render(res){
+  RES=res; showParsed(res.query);
+  const cert=res.detections.filter(d=>d.certified).length;
+  const semantic=res.semantic;
+  $("semantic").innerHTML=semantic?[
+    ["Backend",semantic.backend],
+    ["Model",semantic.model_available?"available":"unavailable"],
+    ["Concepts",semantic.concepts.length?semantic.concepts.join(", "):"none detected"],
+    ["Evidence",semantic.evidence_types.join(" + ")]
+  ].map(k=>'<div class="kv"><span>'+k[0]+"</span><b>"+k[1]+"</b></div>").join("")
+    :'<div class="empty">Semantic metadata unavailable for this cached run.</div>';
+  const tip=res.tip||{screened:res.candidates||0};
+  const cue=res.cue||{retained:res.detections.length};
+  const confirm=res.confirm||{confirmed:0,shortlisted:0,insufficient:0,unavailable:0,status:"unavailable"};
+  $("flow").innerHTML='<div class="flow">'
+    +'<div class="f"><b>TIP · screened</b><strong>'+tip.screened+'</strong><span>candidate scenes</span></div>'
+    +'<div class="f"><b>CUE · ranked</b><strong>'+cue.retained+'</strong><span>shortlisted candidates</span></div>'
+    +'<div class="f"><b>CONFIRM · evaluated</b><strong>'+confirm.confirmed+'/'+confirm.shortlisted+'</strong><span>'+confirm.insufficient+' insufficient · '+confirm.unavailable+' unavailable</span></div>'
+    +'</div>';
+  $("dcount").textContent="("+res.detections.length+", "+cert+" certified)";
+  $("hint").textContent=res.scenes_used+" scenes · "+res.detections.length+" candidates · "+res.took+"s";
+
+  $("summary").innerHTML=[
+    ["Signature",res.query.label],["Composite",res.composite],
+    ["Window",res.window[0]+" → "+res.window[1]],
+    ["Scenes used",res.scenes_used+" of "+res.candidates],
+    ["Model dates",res.model_dates.length],
+    ["Break split",res.split_date],
+    ["Null draws",res.null.n+" (p95 "+res.null.p95.toFixed(2)+")"],
+    ["BH threshold","p ≤ "+res.bh_threshold.toExponential(2)],
+    ["Certified",cert+" / "+res.detections.length],
+    ["Runtime",res.took+" s"],
+  ].concat(res.sar?[["SAR scenes",res.sar.scenes+" (S1 RTC)"]]:[]).map(k=>'<div class="kv"><span>'+k[0]+"</span><b>"+k[1]+"</b></div>").join("")
+   +'<div class="pair" style="margin-top:11px">'
+   +'<figure><img src="'+res.images.before+'"><figcaption>before · median to '+res.split_date+"</figcaption></figure>"
+   +'<figure><img src="'+res.images.after+'"><figcaption>after · median from '+res.split_date+"</figcaption></figure></div>";
+
+  $("prov").innerHTML=res.provenance.links.map(l=>
+    '<div class="node"><div class="t">'+l.n+". "+l.step+'</div><div class="h">'+l.hash.slice(0,48)+"…</div></div>").join("")
+    +'<div class="kv" style="margin-top:6px"><span>chain verified</span><b>'+(res.provenance.verified?"yes":"NO")+"</b></div>"
+    +'<div class="kv"><span>STAC items</span><b>'+res.stac.length+"</b></div>";
+
+  $("results").innerHTML=res.detections.length? res.detections.map((d,i)=>
+    '<div class="res'+(d.certified?" cert":"")+'" id="r'+i+'" onclick="select('+i+')">'
+    +'<div class="t">'+(d.certified?"Certified change":"Candidate")+" · "+d.break_date+"</div>"
+    +'<div class="m">'+d.bbox[1].toFixed(3)+"°N "+d.bbox[0].toFixed(3)+"°E · cell "+d.cell.join(",")+"</div>"
+    +'<div class="b"><span class="pill '+(d.certified?"p-c":"p-u")+'">'+(d.certified?"FDR ≤ α":"below α")+"</span>"
+    +'<span class="tag">z '+d.z.toFixed(2)+" · p "+d.p.toExponential(1)+'</span>'
+    +'<span class="cf">'+d.confidence.toFixed(1)+"%</span></div></div>").join("")
+    : '<div class="empty">No cell exceeded the noise floor for this signature. That is a result: nothing here changed detectably. Try a longer window, a different signature, or a larger AOI.</div>';
+
+  DETF=res.detections.map((d,i)=>{const f=rect(d.bbox);
+    f.properties={idx:i,conf:d.confidence,certified:d.certified,sel:false};return f;});
+  withMap(()=>{map.getSource("det").setData(fc(DETF));drawAOIFromInput();});
+  if(res.detections.length) select(0);
+}
+
+function select(i){
+  if(!RES)return; SEL=i; const d=RES.detections[i];
+  document.querySelectorAll(".res").forEach((e,k)=>e.classList.toggle("sel",k===i));
+  withMap(()=>{
+    // keep our own feature list; MapLibre's source._data is private API
+    DETF.forEach((f,k)=>f.properties.sel=(k===i));
+    const src=map.getSource("det"); if(src) src.setData(fc(DETF));
+    map.fitBounds([[d.bbox[0],d.bbox[1]],[d.bbox[2],d.bbox[3]]],
+                  {padding:160,duration:500,maxZoom:14.5});
+  });
+
+  const deltas=Object.entries(d.deltas).map(([k,v])=>
+    '<div class="kv"><span>Δ'+k.toUpperCase()+"</span><b>"+(v>=0?"+":"")+v.toFixed(3)+"</b></div>").join("");
+  $("evidence").innerHTML=
+    '<div class="pair"><figure><img src="'+d.chips.before+'"><figcaption>before</figcaption></figure>'
+    +'<figure><img src="'+d.chips.after+'"><figcaption>after</figcaption></figure></div>'
+    +'<div style="margin-top:10px">'
+    +'<div class="kv"><span>break date</span><b>'+d.break_date+"</b></div>"
+    +'<div class="kv"><span>max-t statistic</span><b>'+d.z.toFixed(2)+"</b></div>"
+    +'<div class="kv"><span>conformal p</span><b>'+d.p.toExponential(2)+"</b></div>"
+    +'<div class="kv"><span>confidence</span><b>'+d.confidence.toFixed(1)+"%</b></div>"
+    +'<div class="kv"><span>certified at α='+RES.alpha+"</span><b>"+(d.certified?"yes":"no")+"</b></div>"
+    +deltas
+    +(d.sar?('<div class="kv"><span>ADI before → after</span><b>'
+        +(d.sar.adi_pre??"—")+" → "+(d.sar.adi_post??"—")+"</b></div>"
+        +'<div class="kv"><span>SAR max-t</span><b>'+(d.sar.z??"—")+"</b></div>"):"")
+    +"</div>"
+    +'<div style="margin-top:11px" class="tag">index time series · red line = detected break</div>'
+    +chart(d);
+}
+
+function chart(d){
+  const W=320,H=150,P={l:34,r:8,t:10,b:20};
+  const dates=RES.dates, keys=Object.keys(d.series);
+  const cols={ndvi:"#86a06a",ndbi:"#c1954f",mndwi:"#6f97b8",bsi:"#b6584c"};
+  let all=[];keys.forEach(k=>d.series[k].forEach(v=>{if(v!=null)all.push(v)}));
+  if(!all.length)return"";
+  const lo=Math.min(...all),hi=Math.max(...all),pad=(hi-lo)*0.12||0.1;
+  const X=i=>P.l+(i/(dates.length-1))*(W-P.l-P.r);
+  const Y=v=>P.t+(1-(v-(lo-pad))/((hi+pad)-(lo-pad)))*(H-P.t-P.b);
+  let g="";
+  [0,.5,1].forEach(f=>{const v=(lo-pad)+f*((hi+pad)-(lo-pad));const y=Y(v).toFixed(1);
+    g+='<line x1="'+P.l+'" y1="'+y+'" x2="'+(W-P.r)+'" y2="'+y+'" stroke="#262a32"/>'
+      +'<text x="'+(P.l-5)+'" y="'+(+y+3)+'" fill="#71767f" font-size="8.5" text-anchor="end" font-family="ui-monospace,monospace">'+v.toFixed(2)+"</text>";});
+  const bi=dates.indexOf(d.break_date);
+  if(bi>=0){const x=X(bi).toFixed(1);
+    g+='<line x1="'+x+'" y1="'+P.t+'" x2="'+x+'" y2="'+(H-P.b)+'" stroke="#b6584c" stroke-width="1.2" stroke-dasharray="3 3"/>';}
+  keys.forEach(k=>{const s=d.series[k];let path="",open=false;
+    s.forEach((v,i)=>{if(v==null){open=false;return;}
+      path+=(open?"L":"M")+X(i).toFixed(1)+","+Y(v).toFixed(1);open=true;});
+    g+='<path d="'+path+'" fill="none" stroke="'+(cols[k]||"#9a9ea7")+'" stroke-width="1.4"/>';});
+  g+='<text x="'+P.l+'" y="'+(H-6)+'" fill="#71767f" font-size="8.5" font-family="ui-monospace,monospace">'+dates[0]+"</text>"
+   +'<text x="'+(W-P.r)+'" y="'+(H-6)+'" fill="#71767f" font-size="8.5" text-anchor="end" font-family="ui-monospace,monospace">'+dates[dates.length-1]+"</text>";
+  const leg=keys.map((k,i)=>'<tspan fill="'+(cols[k]||"#9a9ea7")+'">'+k.toUpperCase()+"</tspan>").join('<tspan fill="#71767f"> · </tspan>');
+  g+='<text x="'+(P.l+2)+'" y="'+(P.t+8)+'" font-size="8.5" font-family="ui-monospace,monospace">'+leg+"</text>";
+  return '<svg class="chart" viewBox="0 0 '+W+" "+H+'">'+g+"</svg>";
+}
+
+/* deep link: /?job=<id> reopens a finished run without recomputing it */
+const jobParam=new URLSearchParams(location.search).get("job");
+if(jobParam){
+  $("msg").textContent="Loading run "+jobParam+"…";
+  fetch("/api/job/"+jobParam).then(r=>r.json()).then(j=>{
+    if(j.result&&j.result.ok){
+      $("bbox").value=j.result.bbox.map(v=>v.toFixed(4)).join(", ");
+      $("q").value=j.result.query.raw;
+      ["s1","s2","s3"].forEach(s=>$(s).classList.add("on"));
+      $("pbar").style.width="100%";$("msg").textContent="Loaded from job cache";
+      render(j.result);
+    }else{$("msg").textContent="Job not available (server restarted?)";}
+  }).catch(()=>{$("msg").textContent="Could not load that job.";});
+}
+
+fetch("/api/runs").then(r=>r.json()).then(d=>{
+  $("dbBadge").innerHTML="catalogue: <b>"+d.stats.runs+" runs · "+d.stats.detections+" detections</b>";});
+map.on("error",e=>{if(!MAP_OK)$("hint").textContent="Map unavailable (WebGL) - analysis panels still work.";});
+setTimeout(()=>{if(!MAP_OK)$("hint").textContent="Map unavailable (WebGL) - analysis panels still work.";},4000);
+document.addEventListener("keydown",e=>{
+  if(e.target.tagName==="INPUT")return;
+  if(e.key==="ArrowDown"&&RES)select(Math.min(RES.detections.length-1,SEL+1));
+  if(e.key==="ArrowUp"&&RES)select(Math.max(0,SEL-1));});
+</script>
+</body>
+</html>
