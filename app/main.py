@@ -43,6 +43,18 @@ def job(jid: str):
     return JSONResponse(j)
 
 
+@app.get("/api/semantic")
+def semantic_status():
+    from . import semantic
+    return semantic.probe()
+
+
+@app.get("/api/bhoonidhi")
+def bhoonidhi_status():
+    from . import bhoonidhi
+    return bhoonidhi.status()
+
+
 @app.get("/api/runs")
 def runs():
     return analysis_service.recent_runs()

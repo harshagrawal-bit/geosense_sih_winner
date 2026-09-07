@@ -1,6 +1,23 @@
 """Central configuration. No credentials required for the default sources."""
 import os
 
+
+def _load_dotenv(path=None):
+    """Minimal .env loader - no dependency, and it never overrides a real
+    environment variable, so a deployment can still set secrets properly."""
+    path = path or os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env")
+    if not os.path.exists(path):
+        return
+    for line in open(path, encoding="utf-8"):
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        k, v = line.split("=", 1)
+        os.environ.setdefault(k.strip(), v.strip().strip("'\""))
+
+
+_load_dotenv()
+
 # --- STAC endpoints (7.1 Primary Imagery Sources) -------------------------
 EARTH_SEARCH = "https://earth-search.aws.element84.com/v1"
 PLANETARY    = "https://planetarycomputer.microsoft.com/api/stac/v1"

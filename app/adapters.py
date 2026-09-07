@@ -34,6 +34,8 @@ class RuleSemanticRetrievalAdapter:
 
     @staticmethod
     def retrieve(text: str):
+        from . import semantic as clip_tier
+        probe = clip_tier.probe()
         parsed = query.parse(text)
         concepts = list(parsed.get("matched_terms", []))
         if parsed["signature"] != "any":
@@ -46,8 +48,13 @@ class RuleSemanticRetrievalAdapter:
             "normalized_query": (text or "").lower().strip(),
             "concepts": concepts,
             "evidence_types": evidence_types,
-            "backend": "rule_based",
-            "model_available": False,
+            # Report what is actually on this machine. This used to be a
+            # hardcoded False, which kept claiming "Model unavailable" long
+            # after the CLIP tier existed.
+            "backend": "rule_based" + (
+                f" + {probe['model']}" if probe["installed"] else ""),
+            "model_available": probe["installed"],
+            "model_state": probe["state"],
             "embedding": None,
             "intent": parsed,
         }

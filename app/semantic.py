@@ -147,3 +147,45 @@ def delta_scores(before_chips, after_chips, qvec) -> np.ndarray | None:
     if a is None or b is None:
         return None
     return (a @ qvec) - (b @ qvec)
+
+
+def probe() -> dict:
+    """Cheap availability check - does NOT load the 1.5 GB model.
+
+    Reports whether the libraries are installed and whether the weights are
+    already in the HuggingFace cache, so the UI can distinguish "not installed"
+    from "installed but switched off" from "downloading on first use". Anything
+    that answers this by importing torch would cost ~200 MB just to draw a
+    label, so it only inspects the filesystem and the import machinery.
+    """
+    import importlib.util as iu
+    installed = all(iu.find_spec(m) is not None for m in ("torch", "open_clip"))
+
+    cached = False
+    try:
+        from huggingface_hub import try_to_load_from_cache
+        hit = try_to_load_from_cache(REMOTECLIP_REPO, REMOTECLIP_FILE)
+        cached = isinstance(hit, str) and os.path.exists(hit)
+    except Exception:
+        pass
+    if not cached:                       # generic CLIP weights land in ~/.cache
+        home = os.path.expanduser("~/.cache/huggingface/hub")
+        cached = os.path.isdir(home) and any(
+            "CLIP-ViT-B-32" in d or "RemoteCLIP" in d
+            for d in os.listdir(home)) if os.path.isdir(home) else False
+
+    if MODE == "rules":
+        state = "disabled"
+    elif not installed:
+        state = "not installed"
+    elif _state["model"] is not None:
+        state = "loaded"
+    elif cached:
+        state = "ready"                  # weights on disk, loads in seconds
+    else:
+        state = "will download (~600 MB)"
+
+    return {"installed": installed, "weights_cached": cached,
+            "loaded": _state["model"] is not None,
+            "state": state,
+            "model": f"RemoteCLIP {MODEL_NAME}" if installed else None}

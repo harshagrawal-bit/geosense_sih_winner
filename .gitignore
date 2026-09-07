@@ -8,3 +8,4 @@ data/*.npz
 *.log
 .server.pid
 __pycache__/
+.env

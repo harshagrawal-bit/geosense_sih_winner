@@ -145,7 +145,7 @@ svg.chart{width:100%;height:150px;display:block}
         <input type="checkbox" id="sar" style="width:auto"> Add Sentinel-1 SAR tier (ADI, cloud-independent)
       </label>
       <label style="display:flex;align-items:center;gap:7px;margin-top:7px;color:var(--dim)">
-        <input type="checkbox" id="sem" style="width:auto"> Semantic re-rank with RemoteCLIP (slow, ~1.5 GB RAM)
+        <input type="checkbox" id="sem" style="width:auto"> Semantic re-rank with RemoteCLIP <span id="semState" style="color:var(--dim2)">(checking…)</span>
       </label>
       <button class="btn" id="runBtn">Run analysis</button>
       <div class="pbar"><i id="pbar"></i></div>
@@ -325,7 +325,11 @@ function render(res){
   const semantic=res.semantic;
   $("semantic").innerHTML=semantic?[
     ["Backend",semantic.backend],
-    ["Model",semantic.model_available?"available":"unavailable"],
+    ["Model",(semantic.model_state||(semantic.model_available?"available":"not installed"))],
+    ["CLIP re-rank", res.clip&&res.clip.used
+        ? "used · "+res.clip.n_pairs+" chip pairs"
+        : (res.clip&&res.clip.error ? "failed · "+res.clip.error
+           : "off · tick \u201cSemantic re-rank\u201d to enable")],
     ["Concepts",semantic.concepts.length?semantic.concepts.join(", "):"none detected"],
     ["Evidence",semantic.evidence_types.join(" + ")]
   ].map(k=>'<div class="kv"><span>'+k[0]+"</span><b>"+k[1]+"</b></div>").join("")
@@ -453,6 +457,14 @@ if(jobParam){
     }else{$("msg").textContent="Job not available (server restarted?)";}
   }).catch(()=>{$("msg").textContent="Could not load that job.";});
 }
+
+fetch("/api/semantic").then(r=>r.json()).then(d=>{
+  const el=$("semState"); if(!el)return;
+  el.textContent = d.state==="ready" ? "· weights cached, ~40 s per run"
+    : d.state==="loaded" ? "· loaded in memory"
+    : d.state==="not installed" ? "· unavailable (torch not installed)"
+    : "· "+d.state;
+}).catch(()=>{});
 
 fetch("/api/runs").then(r=>r.json()).then(d=>{
   $("dbBadge").innerHTML="catalogue: <b>"+d.stats.runs+" runs · "+d.stats.detections+" detections</b>";});
