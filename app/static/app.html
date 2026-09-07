@@ -324,8 +324,8 @@ function render(res){
   const cert=res.detections.filter(d=>d.certified).length;
   const semantic=res.semantic;
   $("semantic").innerHTML=semantic?[
-    ["Backend",semantic.backend],
-    ["Model",(semantic.model_state||(semantic.model_available?"available":"not installed"))],
+    ["Retriever",semantic.backend],
+    ["CLIP model",(semantic.model_name||"none")+" · "+(semantic.model_state||"unknown")],
     ["CLIP re-rank", res.clip&&res.clip.used
         ? "used · "+res.clip.n_pairs+" chip pairs"
         : (res.clip&&res.clip.error ? "failed · "+res.clip.error

@@ -137,16 +137,22 @@ def query_vector(raw_text: str, signature: str) -> np.ndarray | None:
     return encode_text(raw_text, SIGNATURE_PROMPTS.get(signature))
 
 
-def delta_scores(before_chips, after_chips, qvec) -> np.ndarray | None:
+def delta_scores(before_chips, after_chips, qvec, return_vectors=False):
     """cos(after, q) - cos(before, q) per candidate. Positive = moved toward
-    the description."""
+    the description.
+
+    With `return_vectors` the post-change embeddings come back too, so they can
+    be stored and searched later - the embedding is the expensive part and
+    discarding it after one comparison wastes the whole point of having one.
+    """
     if qvec is None:
-        return None
+        return (None, None) if return_vectors else None
     a = encode_images(after_chips)
     b = encode_images(before_chips)
     if a is None or b is None:
-        return None
-    return (a @ qvec) - (b @ qvec)
+        return (None, None) if return_vectors else None
+    scores = (a @ qvec) - (b @ qvec)
+    return (scores, a) if return_vectors else scores
 
 
 def probe() -> dict:

@@ -48,8 +48,10 @@ class SemanticRetrievalResult(BaseModel):
     normalized_query: str
     concepts: list[str]
     evidence_types: list[str]
-    backend: Literal["rule_based"]
-    model_available: bool = False
+    backend: Literal["rule_based"]          # the retriever itself is rules
+    model_available: bool = False           # is a CLIP tier installed?
+    model_name: str | None = None           # which one, if any
+    model_state: str = "not installed"      # not installed | ready | loaded | disabled
     embedding: list[float] | None = None
     intent: dict[str, Any]
 

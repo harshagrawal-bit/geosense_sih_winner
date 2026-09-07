@@ -55,6 +55,45 @@ def bhoonidhi_status():
     return bhoonidhi.status()
 
 
+@app.get("/api/similar")
+def similar(text: str | None = None, det_id: str | None = None, limit: int = 10):
+    """Semantic retrieval across every change this system has ever indexed.
+
+    `text` embeds the phrase and ranks stored detections by cosine similarity;
+    `det_id` uses an existing detection as the query ("more like this one").
+    This is the part that makes the stored vectors worth storing - without it
+    the embeddings are just an expensive column.
+    """
+    from . import semantic
+    import numpy as np
+
+    rows = analysis_service.storage.vectors()
+    if not rows:
+        return {"query": text or det_id, "results": [],
+                "note": "no embeddings indexed yet - run once with "
+                        "'Semantic re-rank' ticked"}
+
+    matrix = np.asarray([r["vec"] for r in rows], dtype="float32")
+    if det_id:
+        hit = next((i for i, r in enumerate(rows) if r["det_id"] == det_id), None)
+        if hit is None:
+            raise HTTPException(404, f"no embedding stored for {det_id}")
+        q = matrix[hit]
+    elif text:
+        q = semantic.encode_text(text)
+        if q is None:
+            raise HTTPException(503, "semantic model unavailable")
+    else:
+        raise HTTPException(400, "pass ?text= or ?det_id=")
+
+    sims = matrix @ np.asarray(q, dtype="float32")
+    order = np.argsort(-sims)[:limit]
+    return {"query": text or det_id, "indexed": len(rows),
+            "results": [{**{k: v for k, v in rows[i].items() if k != "vec"},
+                         "similarity": round(float(sims[i]), 4)}
+                        for i in order if not (det_id and rows[i]["det_id"] == det_id)]}
+
+
 @app.get("/api/runs")
 def runs():
     return analysis_service.recent_runs()

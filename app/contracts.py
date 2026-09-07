@@ -74,6 +74,7 @@ class ProvenancePort(Protocol):
 
 
 class StoragePort(RunRepository, Protocol):
+    def vectors(self, limit: int = 5000) -> list[dict[str, Any]]: ...
     """Application-facing alias for the persistence repository contract."""
 
 

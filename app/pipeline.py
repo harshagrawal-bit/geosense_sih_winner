@@ -317,12 +317,15 @@ def run(bbox, text, months=None, alpha=0.10, sources=("sentinel-2-l2a",),
         say("verify", 90, f"Semantic re-rank: embedding {len(dets)} chip pairs")
         try:
             qvec = clip_tier.query_vector(text, q["signature"])
-            scores = clip_tier.delta_scores(chip_pre, chip_post, qvec)
+            scores, vecs = clip_tier.delta_scores(chip_pre, chip_post, qvec,
+                                                  return_vectors=True)
             if scores is not None:
                 sem = {"used": True, **clip_tier.status(), "n_pairs": len(dets),
                        "prompt": clip_tier.SIGNATURE_PROMPTS.get(q["signature"])}
-                for d, sc in zip(dets, scores):
+                for n, (d, sc) in enumerate(zip(dets, scores)):
                     d["clip_delta"] = round(float(sc), 4)
+                    if vecs is not None:
+                        d["_vec"] = [round(float(x), 6) for x in vecs[n]]
                 # Fuse the statistical order with the semantic order so neither
                 # stream can override the other outright.
                 stat_rank = np.arange(len(dets), dtype=float)

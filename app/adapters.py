@@ -51,9 +51,9 @@ class RuleSemanticRetrievalAdapter:
             # Report what is actually on this machine. This used to be a
             # hardcoded False, which kept claiming "Model unavailable" long
             # after the CLIP tier existed.
-            "backend": "rule_based" + (
-                f" + {probe['model']}" if probe["installed"] else ""),
+            "backend": "rule_based",
             "model_available": probe["installed"],
+            "model_name": probe["model"],
             "model_state": probe["state"],
             "embedding": None,
             "intent": parsed,
@@ -215,6 +215,9 @@ class DuckDbStorageAdapter:
     def recent(self, limit=25):
         return self.repository.recent(limit)
 
+    def vectors(self, limit=5000):
+        return self.repository.vectors(limit)
+
     def stats(self):
         return self.repository.stats()
 
@@ -228,6 +231,9 @@ class PostgreSQLStorageAdapter:
 
     def recent(self, limit=25):
         return self.repository.recent(limit)
+
+    def vectors(self, limit=5000):
+        return self.repository.vectors(limit)
 
     def stats(self):
         return self.repository.stats()

@@ -93,6 +93,22 @@ chain — no server, no network. Everything persists to DuckDB (`app/store.py`).
 
 ---
 
+## Vector index
+
+Runs with "Semantic re-rank" ticked store each candidate's 512-d RemoteCLIP
+embedding in the `embeddings` table, which makes retrieval possible across
+every change the system has ever indexed - not just within one run:
+
+```bash
+curl "localhost:8008/api/similar?text=buildings+on+bare+ground"   # by phrase
+curl "localhost:8008/api/similar?det_id=<detection-id>"           # more like this
+```
+
+DuckDB stores the vector as `FLOAT[]` and the search is an exact cosine scan,
+which is the right choice at this scale - an ANN index earns its keep in the
+millions, not the thousands. The `pgvector` path is the same query behind
+`PostgreSQLRunRepository`; the schema is written, the swap is untested.
+
 ## Honest notes
 
 **Read this before demoing.** These are real limitations, not modesty.
