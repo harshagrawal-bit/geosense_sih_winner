@@ -218,6 +218,12 @@ class DuckDbStorageAdapter:
     def vectors(self, limit=5000):
         return self.repository.vectors(limit)
 
+    def search_vectors(self, query_vec, limit=10, exclude=None):
+        return self.repository.search_vectors(query_vec, limit, exclude)
+
+    def vector_by_id(self, det_id):
+        return self.repository.vector_by_id(det_id)
+
     def stats(self):
         return self.repository.stats()
 
@@ -234,6 +240,12 @@ class PostgreSQLStorageAdapter:
 
     def vectors(self, limit=5000):
         return self.repository.vectors(limit)
+
+    def search_vectors(self, query_vec, limit=10, exclude=None):
+        return self.repository.search_vectors(query_vec, limit, exclude)
+
+    def vector_by_id(self, det_id):
+        return self.repository.vector_by_id(det_id)
 
     def stats(self):
         return self.repository.stats()

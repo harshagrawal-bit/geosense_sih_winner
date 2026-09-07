@@ -129,10 +129,20 @@ curl "localhost:8008/api/similar?text=buildings+on+bare+ground"   # by phrase
 curl "localhost:8008/api/similar?det_id=<detection-id>"           # more like this
 ```
 
-DuckDB stores the vector as `FLOAT[]` and the search is an exact cosine scan,
-which is the right choice at this scale - an ANN index earns its keep in the
-millions, not the thousands. The `pgvector` path is the same query behind
-`PostgreSQLRunRepository`; the schema is written, the swap is untested.
+**Be precise about what this is.** `pgvector` is a PostgreSQL extension and
+cannot run in DuckDB, so we do not use it and should not claim it.
+`PostgreSQLRunRepository` raises `NotImplementedError` - it is an architectural
+seam, not working code.
+
+What does run: the vector is a fixed-width `FLOAT[512]` column and ranking
+happens **in the database**, via DuckDB's native `array_cosine_similarity`,
+rather than by pulling every row into Python. Verified numerically identical to
+a NumPy cosine to 1e-6.
+
+The scan is exact, on purpose. DuckDB's `vss` HNSW index installs fine, but
+approximate search earns its keep at millions of vectors, not the tens we hold;
+at this scale it would add an approximation error and an index build in
+exchange for nothing.
 
 ## Honest notes
 
