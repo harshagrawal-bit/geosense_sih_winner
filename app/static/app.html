@@ -324,7 +324,11 @@ function render(res){
   const cert=res.detections.filter(d=>d.certified).length;
   const semantic=res.semantic;
   $("semantic").innerHTML=semantic?[
-    ["Retriever",semantic.backend],
+    ["Classifier",semantic.backend],
+    ["Confidence",semantic.margin==null?"—":
+       (semantic.confident?"clear":"LOW")+" · margin "+semantic.margin.toFixed(3)],
+    ["Next-best",(semantic.alternatives&&semantic.alternatives.length)
+       ?semantic.alternatives.slice(0,2).join(", "):"—"],
     ["CLIP model",(semantic.model_name||"none")+" · "+(semantic.model_state||"unknown")],
     ["CLIP re-rank", res.clip&&res.clip.used
         ? "used · "+res.clip.n_pairs+" chip pairs"

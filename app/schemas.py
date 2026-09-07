@@ -48,10 +48,13 @@ class SemanticRetrievalResult(BaseModel):
     normalized_query: str
     concepts: list[str]
     evidence_types: list[str]
-    backend: Literal["rule_based"]          # the retriever itself is rules
+    backend: str                            # which model classified the query
     model_available: bool = False           # is a CLIP tier installed?
     model_name: str | None = None           # which one, if any
     model_state: str = "not installed"      # not installed | ready | loaded | disabled
+    confident: bool = True                  # did the classifier separate cleanly?
+    margin: float | None = None             # gap to the runner-up class
+    alternatives: list[str] = []            # next-best classes, for review
     embedding: list[float] | None = None
     intent: dict[str, Any]
 

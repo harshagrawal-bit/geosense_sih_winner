@@ -51,7 +51,10 @@ class RuleSemanticRetrievalAdapter:
             # Report what is actually on this machine. This used to be a
             # hardcoded False, which kept claiming "Model unavailable" long
             # after the CLIP tier existed.
-            "backend": "rule_based",
+            "backend": parsed.get("classifier", "keyword fallback"),
+            "confident": parsed.get("confident", True),
+            "margin": parsed.get("margin"),
+            "alternatives": [a["label"] for a in parsed.get("alternatives", [])],
             "model_available": probe["installed"],
             "model_name": probe["model"],
             "model_state": probe["state"],

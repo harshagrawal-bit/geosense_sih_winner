@@ -82,8 +82,23 @@ MONTHS = {"month": 1, "months": 1, "year": 12, "years": 12,
           "quarter": 3, "quarters": 3, "week": 0.25, "weeks": 0.25}
 
 
-def parse(text: str) -> Dict[str, Any]:
+def parse(text: str, use_model: bool = True) -> Dict[str, Any]:
+    """Resolve a query to a change signature.
+
+    Classification is done by a sentence-embedding model; the keyword table
+    below survives only as an offline fallback for when no model is staged.
+    Context and time-window extraction stay lexical because they are literal
+    facts in the text ("near a river", "last 18 months"), not semantics.
+    """
     q = (text or "").lower().strip()
+
+    model_pick = None
+    if use_model:
+        try:
+            from . import semantic as _sem
+            model_pick = _sem.classify_query(text)
+        except Exception:
+            model_pick = None
 
     scores = {}
     hits: Dict[str, List[str]] = {}
@@ -93,7 +108,11 @@ def parse(text: str) -> Dict[str, Any]:
             scores[key] = len(matched) + 0.5 * max(len(t) for t in matched) / 10
             hits[key] = matched
 
-    if not scores:                      # nothing matched -> generic monitor
+    if model_pick is not None:
+        from .semantic import CHANGE_CLASSES
+        chosen = model_pick["class"]
+        sig = CHANGE_CLASSES[chosen]
+    elif not scores:                    # no model, no keyword -> monitor all
         chosen = "any"
         sig = {"label": "Any significant change", "targets":
                {"ndvi": 0.0, "ndbi": 0.0, "mndwi": 0.0, "bsi": 0.0},
@@ -113,7 +132,19 @@ def parse(text: str) -> Dict[str, Any]:
         months = 12
 
     explain = []
-    if chosen == "any":
+    if model_pick is not None:
+        explain.append(
+            f"Classified as '{model_pick['label']}' by {model_pick['backend']} "
+            f"(score {model_pick['score']:.3f}, margin {model_pick['margin']:.3f}).")
+        if not model_pick["confident"]:
+            runner = model_pick["ranked"][1]
+            explain.append(
+                f"LOW CONFIDENCE - '{runner['label']}' scored almost as high. "
+                f"Treat the ranking as provisional.")
+        for idx, w in sig["targets"].items():
+            explain.append(f"Expect {idx.upper()} to "
+                           f"{'rise' if w > 0 else 'fall'} (weight {abs(w):.1f}).")
+    elif chosen == "any":
         explain.append("No signature keyword matched - ranking by overall "
                        "change magnitude across all indices.")
     else:
@@ -129,6 +160,11 @@ def parse(text: str) -> Dict[str, Any]:
         explain.append(f"Time window narrowed to the last {months} months.")
 
     return {"raw": text, "signature": chosen, "label": sig["label"],
+            "classifier": (model_pick or {}).get("backend", "keyword fallback"),
+            "confidence": (model_pick or {}).get("score"),
+            "margin": (model_pick or {}).get("margin"),
+            "confident": (model_pick or {}).get("confident", True),
+            "alternatives": (model_pick or {}).get("ranked", [])[1:4],
             "targets": sig["targets"], "requires": sig.get("requires", {}),
             "shape": sig.get("shape"), "sar_expect": sig.get("sar", "none"),
             "context": ctx, "months": months, "explain": explain,
