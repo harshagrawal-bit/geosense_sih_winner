@@ -1,0 +1,610 @@
+<title>GeoSense Field Manual</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap">
+<style>
+:root{
+  --paper:#f3f5f5; --card:#ffffff; --sunk:#eaeeee; --ink:#171c21; --body:#2f3941;
+  --dim:#66727a; --faint:#93a0a6; --rule:#d5dcdb;
+  --veg:#4a6b39; --built:#96661d; --water:#2f5c7d; --bad:#8f3629;
+  --sans:"IBM Plex Sans",system-ui,sans-serif;
+  --serif:"Source Serif 4",Georgia,serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --paper:#12161a; --card:#1a2025; --sunk:#161b20; --ink:#e8edec; --body:#c4cdd0;
+  --dim:#8d9a9f; --faint:#6a767c; --rule:#283037;
+  --veg:#93b277; --built:#d3a55d; --water:#7fadcd; --bad:#dd8474;
+}}
+:root[data-theme="dark"]{
+  --paper:#12161a; --card:#1a2025; --sunk:#161b20; --ink:#e8edec; --body:#c4cdd0;
+  --dim:#8d9a9f; --faint:#6a767c; --rule:#283037;
+  --veg:#93b277; --built:#d3a55d; --water:#7fadcd; --bad:#dd8474;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--body);
+  font:16.5px/1.66 var(--serif);-webkit-font-smoothing:antialiased}
+.page{max-width:1080px;margin:0 auto;padding:40px 24px 90px;
+  display:grid;grid-template-columns:200px minmax(0,1fr);gap:44px;align-items:start}
+@media(max-width:860px){.page{grid-template-columns:1fr;gap:26px}nav{position:static!important}}
+nav{position:sticky;top:28px;font-family:var(--sans);font-size:13px;
+  display:flex;flex-direction:column;gap:3px;border-left:2px solid var(--rule);padding-left:14px}
+nav b{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--faint);margin-bottom:6px;font-weight:600}
+nav a{color:var(--dim);text-decoration:none;padding:2px 0}
+nav a:hover{color:var(--ink)}
+main{min-width:0;display:flex;flex-direction:column;gap:40px}
+header{border-bottom:3px solid var(--ink);padding-bottom:18px}
+.kicker{font-family:var(--mono);font-size:11px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--dim);margin:0 0 10px}
+h1{font-family:var(--sans);font-weight:700;font-size:clamp(32px,5.5vw,46px);
+  line-height:1.04;letter-spacing:-.025em;color:var(--ink);margin:0;text-wrap:balance}
+.sub{margin:14px 0 0;font-size:18px;max-width:62ch}
+section{scroll-margin-top:24px;display:flex;flex-direction:column;gap:14px}
+h2{font-family:var(--sans);font-weight:700;font-size:23px;color:var(--ink);margin:0;
+  letter-spacing:-.015em;padding-bottom:9px;border-bottom:2px solid var(--rule)}
+h3{font-family:var(--sans);font-weight:600;font-size:16.5px;color:var(--ink);
+  margin:14px 0 0;letter-spacing:-.005em}
+p{margin:0;max-width:70ch}
+code,.m{font-family:var(--mono);font-size:.86em;color:var(--ink);
+  background:var(--sunk);padding:1px 5px;border-radius:2px}
+pre{margin:0;background:var(--sunk);border-left:3px solid var(--rule);
+  padding:13px 15px;overflow-x:auto;font:13px/1.6 var(--mono);color:var(--ink)}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-family:var(--sans);font-size:14px;min-width:520px}
+th{text-align:left;font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;
+  color:var(--dim);font-weight:600;padding:0 14px 8px 0;border-bottom:2px solid var(--rule)}
+td{padding:10px 14px 10px 0;border-bottom:1px solid var(--rule);vertical-align:top}
+td:first-child{color:var(--ink);font-weight:500}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px}
+.card{background:var(--card);border:1px solid var(--rule);padding:16px 18px;
+  display:flex;flex-direction:column;gap:7px}
+.card h4{font-family:var(--sans);font-size:14.5px;margin:0;color:var(--ink);font-weight:600}
+.card p{font-size:14.5px;line-height:1.55}
+.tag{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;
+  padding:2px 7px;border:1px solid currentColor;align-self:flex-start;border-radius:2px}
+.t-ok{color:var(--veg)} .t-warn{color:var(--built)} .t-bad{color:var(--bad)} .t-info{color:var(--water)}
+figure{margin:0;display:flex;flex-direction:column;gap:10px}
+figure svg{width:100%;height:auto;color:var(--ink);background:var(--card);
+  border:1px solid var(--rule);padding:10px}
+figcaption{font-family:var(--sans);font-size:13px;color:var(--dim);line-height:1.5}
+ul,ol{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:8px;max-width:70ch}
+li::marker{color:var(--faint)}
+.callout{border-left:4px solid var(--bad);background:var(--sunk);padding:14px 18px;
+  display:flex;flex-direction:column;gap:8px}
+.callout.good{border-left-color:var(--veg)}
+.callout.note{border-left-color:var(--water)}
+.callout b{font-family:var(--sans);color:var(--ink)}
+.qa{display:flex;flex-direction:column;gap:3px;padding:14px 0;border-bottom:1px solid var(--rule)}
+.qa:last-child{border-bottom:0}
+.qa .q{font-family:var(--sans);font-weight:600;color:var(--ink);font-size:15.5px}
+.qa .a{font-size:15.5px}
+.where{font-family:var(--mono);font-size:11.5px;color:var(--water);
+  background:var(--sunk);padding:2px 7px;border-radius:2px;white-space:nowrap}
+footer{font-family:var(--sans);font-size:13.5px;color:var(--dim);
+  border-top:2px solid var(--rule);padding-top:16px}
+</style>
+
+<div class="page">
+<nav>
+  <b>Contents</b>
+  <a href="#what">1 · What it does</a>
+  <a href="#models">2 · The models</a>
+  <a href="#flow">3 · How it flows</a>
+  <a href="#measure">4 · What we measure</a>
+  <a href="#stats">5 · How we avoid lying</a>
+  <a href="#accuracy">6 · Accuracy</a>
+  <a href="#screen">7 · Where it is on screen</a>
+  <a href="#failure">8 · A real failure</a>
+  <a href="#qa">9 · Question bank</a>
+  <a href="#limits">10 · Limits</a>
+</nav>
+
+<main>
+<header>
+  <p class="kicker">SIH26227 · Team VARCHASVA · Field Manual</p>
+  <h1>GeoSense Field Manual</h1>
+  <p class="sub">Every model, every measurement, every number — in plain language,
+  with the honest failures included. Written so you can answer any question
+  about how it works and why it decides what it decides.</p>
+</header>
+
+<!-- ─────────────────────────── 1 ─────────────────────────── -->
+<section id="what">
+  <h2>1 · What the system actually does</h2>
+  <p>You draw a box on a map and type what you are looking for. The system
+  searches the live satellite archive, downloads only the pixels inside your
+  box, watches how that ground behaved over two years, and tells you where
+  something genuinely changed — with a size in hectares, a date, and a
+  statistical guarantee about how often it is wrong.</p>
+
+  <p>The single most important idea: <b>most "change" in satellite imagery is
+  not change.</b> Crops green up and die back. The sun moves. Haze comes and
+  goes. A naive system reports all of it. Nearly everything in GeoSense exists
+  to remove those false alarms and leave the real events.</p>
+
+  <div class="grid2">
+    <div class="card"><span class="tag t-info">scale</span>
+      <h4>Where the numbers come from</h4>
+      <p>An area roughly 9 km across is read into a 256×256 pixel picture, then
+      grouped into a 16×16 grid of <b>256 cells</b>, each about 550 m wide. Every
+      cell gets its own two-year history. All decisions happen per cell.</p></div>
+    <div class="card"><span class="tag t-info">indexed</span>
+      <h4>What has been run so far</h4>
+      <p class="num">31 runs · 148 detections · 350 real satellite scenes ·
+      51 stored image embeddings. Nothing is pre-downloaded; every run queries
+      the live archive.</p></div>
+  </div>
+</section>
+
+<!-- ─────────────────────────── 2 ─────────────────────────── -->
+<section id="models">
+  <h2>2 · The models — there are exactly two</h2>
+  <p>Be precise about this in a viva. Two neural networks, both
+  <b>pretrained and downloaded</b>. We train nothing, and we have no training
+  data. Everything else in the system is classical statistics.</p>
+
+  <div class="scroll"><table>
+    <thead><tr><th>Model</th><th>Size</th><th>What it does here</th><th>Why this one</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>all-MiniLM-L6-v2<br><span class="m">sentence-transformers</span></td>
+        <td class="num">88 MB<br>22 M params</td>
+        <td><b>Understands your query.</b> Turns your sentence and each change-type
+            description into vectors and finds the closest match.</td>
+        <td>Built for sentence-to-sentence meaning. Scored <span class="num">10/11</span>
+            on our test queries vs <span class="num">9/11</span> for CLIP's text side
+            and <span class="num">7/11</span> for keyword rules.</td>
+      </tr>
+      <tr>
+        <td>RemoteCLIP ViT-B/32<br><span class="m">CLIP fine-tuned on satellite imagery</span></td>
+        <td class="num">~600 MB<br>151 M params</td>
+        <td><b>Looks at the pictures.</b> Re-orders the shortlist by how much each
+            place <em>became</em> more like your description.</td>
+        <td>Ordinary CLIP has never seen much satellite imagery. RemoteCLIP is
+            the same architecture fine-tuned on remote-sensing image–text pairs.</td>
+      </tr>
+    </tbody>
+  </table></div>
+
+  <h3>The one clever idea in how we use RemoteCLIP</h3>
+  <p>The obvious thing is to ask the model <i>"does this look like
+  construction?"</i> That fails badly, because half of any Indian scene already
+  contains buildings — you would just rank existing cities. So we embed each
+  place <b>twice</b>, before and after, and score the <b>difference</b>:</p>
+  <pre>score = similarity(after, your words) − similarity(before, your words)</pre>
+  <p>Only places that <em>moved toward</em> your description score highly. We
+  are searching for change in meaning, not for appearance.</p>
+
+  <div class="callout note">
+    <p><b>Why we embed only ~4 places, not all 256.</b> RemoteCLIP takes 858 ms
+    per image on this laptop's CPU. All 256 cells × 2 images each would be about
+    seven minutes. So the cheap statistics run first and propose a shortlist,
+    and only that shortlist is shown to the expensive model. This is the same
+    "tip-and-cue" logic the architecture applies to satellites — applied to
+    compute instead.</p>
+  </div>
+</section>
+
+<!-- ─────────────────────────── 3 ─────────────────────────── -->
+<section id="flow">
+  <h2>3 · How everything connects</h2>
+  <figure>
+    <svg viewBox="0 0 700 560" role="img" aria-label="Pipeline from query and satellite archives through five stages down to results, showing what narrows at each step and which model runs where.">
+      <defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker></defs>
+      <g font-family="IBM Plex Mono, monospace" font-size="11" fill="currentColor">
+        <g stroke="currentColor" fill="none" stroke-width="1" opacity=".5">
+          <rect x="12" y="12" width="200" height="42"/><rect x="250" y="12" width="200" height="42"/><rect x="488" y="12" width="200" height="42"/>
+        </g>
+        <text x="112" y="30" text-anchor="middle" font-size="11.5">Sentinel-2 L2A</text>
+        <text x="112" y="45" text-anchor="middle" font-size="9.5" opacity=".7">optical · 10 m · 5 days</text>
+        <text x="350" y="30" text-anchor="middle" font-size="11.5">Landsat C2 L2</text>
+        <text x="350" y="45" text-anchor="middle" font-size="9.5" opacity=".7">optical · 30 m</text>
+        <text x="588" y="30" text-anchor="middle" font-size="11.5">Sentinel-1 RTC</text>
+        <text x="588" y="45" text-anchor="middle" font-size="9.5" opacity=".7">radar · sees through cloud</text>
+
+        <g stroke="currentColor" stroke-width="1.2" fill="none">
+          <path d="M112,54 L112,72 M350,54 L350,72 M588,54 L588,72"/><path d="M112,72 L588,72"/>
+          <path d="M350,72 L350,92" marker-end="url(#a)"/>
+        </g>
+
+        <g stroke="currentColor" stroke-width="1.5" fill="none">
+          <rect x="150" y="94" width="400" height="56"/>
+          <rect x="150" y="188" width="400" height="66"/>
+          <rect x="150" y="292" width="400" height="66"/>
+          <rect x="150" y="396" width="400" height="56"/>
+          <rect x="150" y="490" width="400" height="52"/>
+        </g>
+        <text x="350" y="116" text-anchor="middle" font-weight="600">1 · FIND THE PICTURES</text>
+        <text x="350" y="134" text-anchor="middle" font-size="10" opacity=".75">search archive · download only your box · mask cloud</text>
+
+        <text x="350" y="210" text-anchor="middle" font-weight="600">2 · MEASURE THE GROUND</text>
+        <text x="350" y="227" text-anchor="middle" font-size="10" opacity=".75">NDVI · NDBI · MNDWI · BSI for every pixel, every date</text>
+        <text x="350" y="243" text-anchor="middle" font-size="10" opacity=".75">group into 256 cells, each with a 2-year history</text>
+
+        <text x="350" y="314" text-anchor="middle" font-weight="600">3 · REMOVE THE SEASONS</text>
+        <text x="350" y="331" text-anchor="middle" font-size="10" opacity=".75">fit the yearly cycle, subtract it, then look for a step</text>
+        <text x="350" y="347" text-anchor="middle" font-size="10" opacity=".75">that the seasons cannot explain</text>
+
+        <text x="350" y="418" text-anchor="middle" font-weight="600">4 · PROVE IT IS NOT LUCK</text>
+        <text x="350" y="436" text-anchor="middle" font-size="10" opacity=".75">shuffle time 140× to see what noise can fake · FDR control</text>
+
+        <text x="350" y="512" text-anchor="middle" font-weight="600">5 · MEASURE AND EXPLAIN</text>
+        <text x="350" y="530" text-anchor="middle" font-size="10" opacity=".75">hectares · break date · before/after · provenance</text>
+
+        <g stroke="currentColor" stroke-width="1.2" fill="none">
+          <path d="M350,150 L350,186" marker-end="url(#a)"/>
+          <path d="M350,254 L350,290" marker-end="url(#a)"/>
+          <path d="M350,358 L350,394" marker-end="url(#a)"/>
+          <path d="M350,452 L350,488" marker-end="url(#a)"/>
+        </g>
+        <text x="358" y="172" font-size="10" opacity=".85">~26 usable dates</text>
+        <text x="358" y="276" font-size="10" opacity=".85">256 cells × 4 measurements × 26 dates</text>
+        <text x="358" y="380" font-size="10" opacity=".85">a score per cell</text>
+        <text x="358" y="474" font-size="10" opacity=".85">~4 survive</text>
+
+        <g stroke="currentColor" stroke-width="1" fill="none" opacity=".85">
+          <rect x="8" y="292" width="126" height="66"/>
+          <path d="M134,325 L148,325" marker-end="url(#a)" stroke-width="1.2" opacity="1"/>
+          <rect x="566" y="396" width="126" height="56"/>
+          <path d="M552,424 L564,424" marker-end="url(#a)" stroke-width="1.2" opacity="1"/>
+        </g>
+        <text x="71" y="312" text-anchor="middle" font-size="10.5" font-weight="600">MiniLM</text>
+        <text x="71" y="328" text-anchor="middle" font-size="9" opacity=".75">reads your words,</text>
+        <text x="71" y="340" text-anchor="middle" font-size="9" opacity=".75">picks which</text>
+        <text x="71" y="351" text-anchor="middle" font-size="9" opacity=".75">measurements matter</text>
+
+        <text x="629" y="416" text-anchor="middle" font-size="10.5" font-weight="600">RemoteCLIP</text>
+        <text x="629" y="431" text-anchor="middle" font-size="9" opacity=".75">looks at the ~4</text>
+        <text x="629" y="443" text-anchor="middle" font-size="9" opacity=".75">and re-orders them</text>
+      </g>
+    </svg>
+    <figcaption>Each stage hands the next one a smaller problem: about 350 scenes
+    of archive become 256 cells, then one score per cell, then roughly four
+    candidates. The expensive image model only ever sees those four.</figcaption>
+  </figure>
+</section>
+
+<!-- ─────────────────────────── 4 ─────────────────────────── -->
+<section id="measure">
+  <h2>4 · What we actually measure</h2>
+  <p>Satellites record brightness in several colours, including two infrared
+  bands your eye cannot see. Combining them gives numbers that mean something
+  physical. All four run from −1 to +1.</p>
+
+  <div class="scroll"><table>
+    <thead><tr><th>Index</th><th>Formula</th><th>In plain words</th><th>Typical values</th></tr></thead>
+    <tbody>
+      <tr><td>NDVI</td><td class="m">(NIR−Red)/(NIR+Red)</td>
+          <td>How much living plant matter. Healthy leaves reflect near-infrared strongly.</td>
+          <td class="num">forest 0.8 · crops 0.4 · desert 0.1</td></tr>
+      <tr><td>NDBI</td><td class="m">(SWIR−NIR)/(SWIR+NIR)</td>
+          <td>How built-up or hard-surfaced. Concrete and roofs are bright in shortwave infrared.</td>
+          <td class="num">city +0.2 · field −0.2</td></tr>
+      <tr><td>MNDWI</td><td class="m">(Green−SWIR)/(Green+SWIR)</td>
+          <td>How wet. Water absorbs shortwave infrared almost completely.</td>
+          <td class="num">water &gt; 0 · dry land −0.7</td></tr>
+      <tr><td>BSI</td><td class="m">(SWIR+Red)−(NIR+Blue)<br>over their sum</td>
+          <td>How bare the soil is — no plants, no water, no buildings.</td>
+          <td class="num">bare +0.2 · vegetated −0.2</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>How your words become measurements</h3>
+  <p>MiniLM matches your sentence to one of nine change types. Each type carries
+  the physical directions its indices move — that part is physics, not
+  guesswork: removing vegetation <em>does</em> lower NDVI.</p>
+  <div class="scroll"><table>
+    <thead><tr><th>You ask for</th><th>System expects</th></tr></thead>
+    <tbody>
+      <tr><td>new construction</td><td class="m">NDVI ↓ 1.0 · NDBI ↑ 1.0 · BSI ↑ 0.6</td></tr>
+      <tr><td>deforestation</td><td class="m">NDVI ↓ 1.2 · BSI ↑ 0.5 &nbsp;(requires forest before)</td></tr>
+      <tr><td>landslide</td><td class="m">NDVI ↓ 1.2 · BSI ↑ 1.0</td></tr>
+      <tr><td>flooding</td><td class="m">MNDWI ↑ 1.2 · NDVI ↓ 0.5</td></tr>
+      <tr><td>water loss</td><td class="m">MNDWI ↓ 1.2</td></tr>
+      <tr><td>new road</td><td class="m">NDBI ↑ 1.0 · NDVI ↓ 0.8 · BSI ↑ 0.6 · elongated shape</td></tr>
+    </tbody>
+  </table></div>
+  <p>Those weights are combined into a single number per cell per date, pointing
+  in the direction of the thing you asked about. That combined number is what
+  everything downstream tests. <span class="where">Run summary → Composite</span></p>
+</section>
+
+<!-- ─────────────────────────── 5 ─────────────────────────── -->
+<section id="stats">
+  <h2>5 · How we avoid reporting nonsense</h2>
+  <p>This is the part that makes the system trustworthy, and the part worth
+  explaining slowly to a judge. Four defences, applied in order.</p>
+
+  <h3>Defence 1 — Subtract the seasons</h3>
+  <p>Crops go green and brown every year. If you compare March to October you
+  will always find "change". So we fit a smooth yearly wave to each cell's
+  history and subtract it. What remains is only what the calendar cannot
+  explain.</p>
+  <p><b>A measured detail worth mentioning:</b> we deliberately do <em>not</em>
+  include a straight-line trend term. Over a two-year window it cannot be
+  estimated reliably and it extrapolates catastrophically — with it, pure noise
+  scored as strongly as real change in our tests. Removing it fixed that.</p>
+
+  <h3>Defence 2 — Find the step, don't assume the date</h3>
+  <p>We try <em>every possible split date</em> and keep the one where before and
+  after differ most. That is how the system reports when a change started
+  instead of being told. <span class="where">Evidence → break date</span></p>
+
+  <h3>Defence 3 — Ask what noise can fake</h3>
+  <p>This is the core trick. We shuffle the dates into a random order — which
+  destroys any real event but keeps the noise exactly as it was — and re-run the
+  whole search. Repeat 140 times over 160 cells and you get about
+  <b>22,400 examples of the biggest "change" pure noise can invent</b> in this
+  scene, at this cloudiness, with this many dates.</p>
+  <p>A real detection has to beat that. So the threshold isn't a number we chose
+  — the data sets it. <span class="where">Run summary → Null draws</span></p>
+
+  <h3>Defence 4 — Correct for testing 256 places at once</h3>
+  <p>Testing 256 cells means even a strict 1-in-100 threshold gives you two or
+  three false alarms every run. The <b>Benjamini–Hochberg</b> procedure raises
+  the bar to compensate, and lets us make a promise with real content:</p>
+  <div class="callout good">
+    <p><b>"At α = 0.10, at most 10% of the cells we certify are expected to be
+    false."</b> Not a confidence score somebody invented — a controlled error
+    rate. When we measured it, the true rate was 0% against a nominal 10%: the
+    guarantee holds, conservatively.</p>
+  </div>
+  <p>This is why runs often return <b>zero certified detections</b>. That is the
+  system being honest, not broken. Everything below the bar is still listed as a
+  <em>candidate</em> with its p-value.</p>
+</section>
+
+<!-- ─────────────────────────── 6 ─────────────────────────── -->
+<section id="accuracy">
+  <h2>6 · Accuracy — and how we measured it</h2>
+  <p>Public change-detection benchmarks (OSCD, LEVIR-CD) give you <b>two
+  dates and a mask</b>. Our detector needs 15+ dates to fit a seasonal model, so
+  scoring against them would measure a different algorithm. Instead we do what a
+  radar engineer does to test a receiver: take real signal, inject a known
+  target, and see how small a target we can still find.</p>
+  <p>We take a genuine 23-date Sentinel-2 stack over Gurugram — real noise, real
+  seasons, real cloud gaps — inject a change of known size at a known place, and
+  measure how often the detector finds it.</p>
+
+  <div class="scroll"><table>
+    <thead><tr><th>Injected change (ΔNDVI)</th><th>Found</th><th>Correct when it fired</th><th>False alarms</th></tr></thead>
+    <tbody>
+      <tr><td>nothing at all (8 repeats)</td><td class="num">—</td><td class="num">—</td><td class="num"><b>0 cells flagged</b></td></tr>
+      <tr><td class="num">0.04</td><td class="num">0%</td><td class="num">—</td><td class="num">0%</td></tr>
+      <tr><td class="num">0.06</td><td class="num">27%</td><td class="num">100%</td><td class="num">0%</td></tr>
+      <tr><td class="num"><b>0.08</b></td><td class="num"><b>80%</b></td><td class="num"><b>100%</b></td><td class="num">0%</td></tr>
+      <tr><td class="num">0.12</td><td class="num">100%</td><td class="num">100%</td><td class="num">0%</td></tr>
+      <tr><td class="num">0.24</td><td class="num">100%</td><td class="num">100%</td><td class="num">0%</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="grid2">
+    <div class="card"><span class="tag t-ok">headline</span>
+      <h4>Smallest change we can reliably see</h4>
+      <p><b>ΔNDVI ≈ 0.08</b> at 80% detection — roughly a third of a healthy
+      field's greenness, over about half a hectare. At 50% detection it is 0.069.</p></div>
+    <div class="card"><span class="tag t-ok">headline</span>
+      <h4>False alarm rate</h4>
+      <p><b>0% measured</b> against a promised ceiling of 10%. On completely
+      unchanged imagery, across eight repeats, it flagged <b>nothing</b>.</p></div>
+  </div>
+  <p>Reproduce it yourself: <code>python run_eval.py</code>. It calls the same
+  code the live pipeline calls, so it measures the shipped detector rather than
+  a copy of it.</p>
+</section>
+
+<!-- ─────────────────────────── 7 ─────────────────────────── -->
+<section id="screen">
+  <h2>7 · Where every number lives on screen</h2>
+  <figure>
+    <svg viewBox="0 0 700 300" role="img" aria-label="Three column layout of the console: controls on the left, map in the middle, evidence and provenance on the right.">
+      <g font-family="IBM Plex Mono, monospace" font-size="10.5" fill="currentColor">
+        <g stroke="currentColor" fill="none" stroke-width="1.4">
+          <rect x="10" y="10" width="180" height="280"/>
+          <rect x="200" y="10" width="270" height="280"/>
+          <rect x="480" y="10" width="210" height="280"/>
+        </g>
+        <g stroke="currentColor" fill="none" stroke-width="0.7" opacity=".45">
+          <path d="M10,58 H190 M10,120 H190 M10,196 H190"/>
+          <path d="M480,86 H690 M480,150 H690 M480,232 H690"/>
+        </g>
+        <text x="100" y="30" text-anchor="middle" font-weight="600">LEFT — controls</text>
+        <text x="100" y="48" text-anchor="middle" font-size="9.5" opacity=".8">1 Query + what it understood</text>
+        <text x="100" y="78" text-anchor="middle" font-size="9.5" opacity=".8">2 Area of interest</text>
+        <text x="100" y="96" text-anchor="middle" font-size="9.5" opacity=".8">preset or drag a box</text>
+        <text x="100" y="140" text-anchor="middle" font-size="9.5" opacity=".8">3 Parameters + toggles</text>
+        <text x="100" y="158" text-anchor="middle" font-size="9.5" opacity=".8">risk α · SAR · CLIP re-rank</text>
+        <text x="100" y="176" text-anchor="middle" font-size="9.5" opacity=".8">progress: Discover/Prioritise/Verify</text>
+        <text x="100" y="216" text-anchor="middle" font-size="9.5" opacity=".8">4 Ranked detections</text>
+        <text x="100" y="234" text-anchor="middle" font-size="9.5" opacity=".8">certified vs candidate</text>
+        <text x="100" y="252" text-anchor="middle" font-size="9.5" opacity=".8">z · p · hectares</text>
+
+        <text x="335" y="30" text-anchor="middle" font-weight="600">CENTRE — map</text>
+        <text x="335" y="150" text-anchor="middle" font-size="9.5" opacity=".8">dashed box = your AOI</text>
+        <text x="335" y="170" text-anchor="middle" font-size="9.5" opacity=".8">green square = certified</text>
+        <text x="335" y="188" text-anchor="middle" font-size="9.5" opacity=".8">amber square = candidate</text>
+        <text x="335" y="206" text-anchor="middle" font-size="9.5" opacity=".8">white outline = selected</text>
+        <text x="335" y="270" text-anchor="middle" font-size="9.5" opacity=".8">basemap: Imagery / Street / Bhuvan</text>
+
+        <text x="585" y="30" text-anchor="middle" font-weight="600">RIGHT — evidence</text>
+        <text x="585" y="50" text-anchor="middle" font-size="9.5" opacity=".8">Semantic retrieval:</text>
+        <text x="585" y="66" text-anchor="middle" font-size="9.5" opacity=".8">which model read your query</text>
+        <text x="585" y="106" text-anchor="middle" font-size="9.5" opacity=".8">TIP → CUE → CONFIRM counts</text>
+        <text x="585" y="124" text-anchor="middle" font-size="9.5" opacity=".8">Run summary: composite, α,</text>
+        <text x="585" y="140" text-anchor="middle" font-size="9.5" opacity=".8">null draws, BH threshold</text>
+        <text x="585" y="176" text-anchor="middle" font-size="9.5" opacity=".8">Evidence: before / after / extent</text>
+        <text x="585" y="194" text-anchor="middle" font-size="9.5" opacity=".8">hectares · break date · p</text>
+        <text x="585" y="212" text-anchor="middle" font-size="9.5" opacity=".8">index deltas · CLIP Δ · ADI</text>
+        <text x="585" y="256" text-anchor="middle" font-size="9.5" opacity=".8">Provenance: hash chain</text>
+        <text x="585" y="274" text-anchor="middle" font-size="9.5" opacity=".8">+ STAC scene IDs</text>
+      </g>
+    </svg>
+    <figcaption>Controls on the left, geography in the middle, evidence for the
+    selected detection on the right.</figcaption>
+  </figure>
+
+  <div class="scroll"><table>
+    <thead><tr><th>If asked…</th><th>Point at</th><th>It says</th></tr></thead>
+    <tbody>
+      <tr><td>"How did it understand my query?"</td><td class="where">Semantic retrieval</td>
+          <td>Classifier name, confidence margin, next-best classes</td></tr>
+      <tr><td>"Which measurements did it use?"</td><td class="where">Run summary → Composite</td>
+          <td class="m">−1.2·NDVI + 1.0·BSI</td></tr>
+      <tr><td>"What is your false alarm rate?"</td><td class="where">Run summary → BH threshold</td>
+          <td>The p-value bar set by α over 256 tests</td></tr>
+      <tr><td>"How do you know that isn't noise?"</td><td class="where">Run summary → Null draws</td>
+          <td class="num">22,400 shuffled examples</td></tr>
+      <tr><td>"How big is the change?"</td><td class="where">Evidence → changed area</td>
+          <td class="num">e.g. 5.31 ha (57 px @ 30.5 m)</td></tr>
+      <tr><td>"When did it start?"</td><td class="where">Evidence → break date</td>
+          <td>Earliest date the evidence supports</td></tr>
+      <tr><td>"Can you prove the inputs?"</td><td class="where">Provenance · hash chain</td>
+          <td>Every step hashed to its parent + scene IDs</td></tr>
+      <tr><td>"Is the AI actually running?"</td><td class="where">Run summary → CLIP model</td>
+          <td class="m">RemoteCLIP ViT-B-32 · 4 chip pairs</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- ─────────────────────────── 8 ─────────────────────────── -->
+<section id="failure">
+  <h2>8 · A real failure, explained</h2>
+  <p>Lead with this if you get a hostile question. Being able to explain your
+  own failure precisely is worth more than pretending you have none.</p>
+  <p><b>What happened:</b> we asked for <em>flooding</em> over a desert area near
+  Pali, Rajasthan. The system returned four detections and certified one.
+  There was no flood.</p>
+  <pre>certified cell[15,14]
+  ΔMNDWI  +0.083   (wetness rose slightly)
+  ΔNDVI   −0.155   (vegetation fell)
+  ΔNDBI   +0.055   (hard/bare surface ROSE)
+  ΔBSI    +0.046   (bare soil ROSE)</pre>
+  <p><b>Why that cannot be a flood:</b> water absorbs shortwave infrared almost
+  completely, so under real water NDBI and BSI <em>fall</em>. Here they rose.
+  This is dry ground getting drier and barer — the opposite.</p>
+
+  <div class="callout">
+    <p><b>Three separate causes, all worth naming:</b></p>
+    <ol>
+      <li><b>We test the direction of change, never the resulting state.</b>
+      MNDWI going from −0.80 to −0.72 scores the same as −0.1 to +0.4. Real water
+      needs MNDWI above roughly 0. There is no absolute gate.</li>
+      <li><b>The flood recipe only looks at two of four indices.</b> It uses
+      MNDWI and NDVI and ignores NDBI and BSI — the very two that would have
+      vetoed every one of these detections.</li>
+      <li><b>The models classify the question, not the answer.</b> MiniLM read
+      your words; RemoteCLIP re-ordered the shortlist. No stage ever asked
+      "is this actually a flood?"</li>
+    </ol>
+  </div>
+  <p><b>The fix</b> is change-type classification: classify each detection from
+  its own evidence rather than only testing what was asked, add absolute gates
+  (a flood must end up wet), and warn when the evidence disagrees with the
+  query. That work is identified and not yet built.</p>
+</section>
+
+<!-- ─────────────────────────── 9 ─────────────────────────── -->
+<section id="qa">
+  <h2>9 · Question bank</h2>
+
+  <div class="qa"><div class="q">How is the query classified, and on what parameters?</div>
+  <div class="a">Your sentence is converted to a 384-number vector by
+  all-MiniLM-L6-v2. Each of nine change types has a written description, also
+  converted to a vector. We take the closest match by cosine similarity, and
+  report the gap to the runner-up as a confidence margin. No keywords are
+  matched. If the margin is small, the interface says LOW CONFIDENCE instead of
+  pretending.</div></div>
+
+  <div class="qa"><div class="q">Why not just use keywords?</div>
+  <div class="a">We did, and it failed silently. "landslide and built up damage"
+  matched the letters "built" and searched for new construction — the opposite of
+  what was asked — without ever saying so. Keyword rules scored 7/11 on our test
+  queries; the model scores 10/11 and flags its own uncertainty.</div></div>
+
+  <div class="qa"><div class="q">Did you train these models?</div>
+  <div class="a">No. Both are pretrained and used zero-shot. We have no labelled
+  training data. This is a feature, not an excuse: nothing has been fitted to our
+  own test cases, so the numbers are not self-flattering.</div></div>
+
+  <div class="qa"><div class="q">What is your accuracy?</div>
+  <div class="a">Minimum detectable change ΔNDVI ≈ 0.08 at 80% detection, 100%
+  precision from 0.06 upward, and 0 false alarms measured on unchanged imagery
+  against a promised ceiling of 10%. Most teams cannot state a detection limit at
+  all.</div></div>
+
+  <div class="qa"><div class="q">Why does it sometimes find nothing?</div>
+  <div class="a">Because it is testing 256 places at once and correcting for that.
+  With ~15 usable dates, only large clean changes clear the bar. Zero certified
+  detections is a statement about the data, not a crash — and everything below
+  the bar is still listed with its p-value.</div></div>
+
+  <div class="qa"><div class="q">Confidence says 99.6% but it's marked "below α". Why?</div>
+  <div class="a">Fair catch, and the wording is poor. "Confidence" is 1 − p for
+  that one cell in isolation. "Certified" additionally requires surviving the
+  correction for testing 256 cells simultaneously. A cell can be individually
+  unusual yet not survive that correction. The two numbers answer different
+  questions.</div></div>
+
+  <div class="qa"><div class="q">Why DuckDB and not PostgreSQL with pgvector?</div>
+  <div class="a">This machine has no PostgreSQL, no Docker and no admin rights.
+  Both sit behind the same interface, so swapping is a connection string. Be
+  precise: <b>pgvector is a PostgreSQL extension and does not run in DuckDB, so
+  we do not claim it.</b> What does run is native in-database cosine search over a
+  fixed-width 512-number column, verified identical to a NumPy calculation.</div></div>
+
+  <div class="qa"><div class="q">Why not SAM for segmentation?</div>
+  <div class="a">SAM segments <em>objects</em> by appearance. We need the extent
+  of a <em>change</em>, which is already defined by the statistic that raised the
+  alarm. Deriving the footprint from that same statistic means the reported
+  hectares can never contradict the detection — and it needs no model, no GPU and
+  no download.</div></div>
+
+  <div class="qa"><div class="q">Can it run offline, as the rules require?</div>
+  <div class="a">Not yet, and this is the most serious gap. Every scene is fetched
+  live from public archives at query time. With networking disabled the system
+  does nothing. Local staging is designed but unbuilt.</div></div>
+
+  <div class="qa"><div class="q">Can you find "large vehicle concentrations"?</div>
+  <div class="a">No — and the system now says so. Sentinel-2 pixels are 10 m
+  across; a truck is 2 m. That query returns LOW CONFIDENCE with a margin of
+  0.021. Detecting vehicles needs sub-metre commercial imagery.</div></div>
+</section>
+
+<!-- ─────────────────────────── 10 ─────────────────────────── -->
+<section id="limits">
+  <h2>10 · What is missing</h2>
+  <div class="scroll"><table>
+    <thead><tr><th>Requirement</th><th>State</th><th>Note</th></tr></thead>
+    <tbody>
+      <tr><td>Semantic + image-to-image retrieval</td><td><span class="tag t-warn">partial</span></td>
+          <td>Works, but only across past detections — not every archive tile</td></tr>
+      <tr><td>Classify change type</td><td><span class="tag t-bad">missing</span></td>
+          <td>We test the type you asked for; we never classify independently. This is the flood failure</td></tr>
+      <tr><td>False-alarm suppression</td><td><span class="tag t-ok">strong</span></td>
+          <td>Seasonal model, permutation null, FDR control, cloud masks</td></tr>
+      <tr><td>Clustering of similar sites</td><td><span class="tag t-bad">missing</span></td>
+          <td>Similarity search exists; grouping does not</td></tr>
+      <tr><td>Analyst confirm / reject + feedback</td><td><span class="tag t-bad">missing</span></td>
+          <td>Explicitly required by the problem statement</td></tr>
+      <tr><td>Offline operation, no external APIs</td><td><span class="tag t-bad">missing</span></td>
+          <td>The most serious gap — evaluation runs with networking disabled</td></tr>
+      <tr><td>Incremental ingestion</td><td><span class="tag t-bad">missing</span></td>
+          <td>Each run re-fetches; there is no persistent tile index</td></tr>
+      <tr><td>Operational report (build time, storage, latency)</td><td><span class="tag t-warn">partial</span></td>
+          <td>Accuracy measured; operational metrics not collected</td></tr>
+    </tbody>
+  </table></div>
+  <div class="callout note">
+    <p><b>Say the gaps out loud before you are asked.</b> A team that can name
+    what its system cannot do, precisely and without flinching, reads as more
+    competent than one claiming everything works — especially to judges who will
+    find the gaps anyway.</p>
+  </div>
+</section>
+
+<footer>Source: <span class="m">README.md</span> (architecture and honest notes),
+<span class="m">OVERVIEW.md</span> (short version),
+<span class="m">python run_eval.py</span> (reproduces the accuracy table).
+14 commits · 3,169 lines across 15 modules.</footer>
+</main>
+</div>
