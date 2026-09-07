@@ -284,6 +284,25 @@ def run(bbox, text, months=None, alpha=0.10, sources=("sentinel-2-l2a",),
         chip_pre.append(np.dstack([wp[c] for c in ("red", "green", "blue")]))
         chip_post.append(np.dstack([wq[c] for c in ("red", "green", "blue")]))
 
+        # Per-date filmstrip. A median composite can hide the difference
+        # between a real, persistent change and one bad scene, so give the
+        # reviewer every acquisition that went into the decision - rendered
+        # with the same fixed stretch, so brightness differences are ground
+        # truth rather than an artefact of independent normalisation.
+        strip = []
+        for k in keep_idx:
+            fn = f"c{cid}_t{k:02d}.png"
+            dependencies.imagery.rgb_png(
+                {c: st[c][k][sl] for c in ("red", "green", "blue")},
+                os.path.join(outdir, fn), size=150)
+            # How much of this crop actually survived cloud masking. A frame
+            # that is 70% black is not evidence, and the reviewer should be
+            # able to see that at a glance rather than infer it.
+            usable = float(np.mean(np.isfinite(ix["ndvi"][k][sl])))
+            strip.append({"date": dates[k], "url": f"/chips/{run_id}/{fn}",
+                          "phase": "pre" if k in pre_k else "post",
+                          "usable": round(usable, 3)})
+
         deltas = {k: float(np.nanmean(cells[k][post_k, j, i]) -
                            np.nanmean(cells[k][pre_k, j, i])) for k in cells}
 
@@ -327,6 +346,7 @@ def run(bbox, text, months=None, alpha=0.10, sources=("sentinel-2-l2a",),
                 "adi_pre": None if not np.isfinite(sar["adi_pre"][j, i]) else round(float(sar["adi_pre"][j, i]), 3),
                 "adi_post": None if not np.isfinite(sar["adi_post"][j, i]) else round(float(sar["adi_post"][j, i]), 3),
                 "z": None if sar["z"] is None else round(float(sar["z"][j, i]), 2)},
+            "filmstrip": strip,
             "series": {k: [None if not np.isfinite(v) else round(float(v), 4)
                            for v in cells[k][:, j, i]] for k in cells},
             "chips": {"before": f"/chips/{run_id}/c{cid}_before.png",

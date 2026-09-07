@@ -82,6 +82,46 @@ input:focus,select:focus{border-color:var(--steel)}
 .basemap button{background:rgba(21,23,27,.9);padding:5px 10px;font-size:11px;color:var(--dim);border-right:1px solid var(--line2)}
 .basemap button:last-child{border:0}.basemap button.on{background:#39414c;color:var(--txt)}
 svg.chart{width:100%;height:150px;display:block}
+/* ---------- verification inspector ---------- */
+#insp{position:fixed;inset:0;z-index:60;background:rgba(8,10,13,.94);
+  display:none;flex-direction:column;padding:18px 20px;gap:12px}
+#insp.on{display:flex}
+#insp header{display:flex;align-items:center;gap:14px;border:0;height:auto;padding:0;background:none}
+#insp h4{margin:0;font-size:15px;font-weight:600;color:var(--txt)}
+#insp .sp{flex:1}
+#insp .x{font-size:22px;line-height:1;color:var(--dim);padding:2px 8px}
+#insp .x:hover{color:var(--txt)}
+.cmp{position:relative;flex:1;min-height:0;display:flex;align-items:center;justify-content:center}
+.cmpbox{position:relative;height:100%;aspect-ratio:1;max-width:100%;
+  border:1px solid var(--line2);overflow:hidden;background:#000;cursor:ew-resize;
+  touch-action:none}
+.cmpbox img{position:absolute;inset:0;width:100%;height:100%;
+  object-fit:cover;image-rendering:pixelated;user-select:none;-webkit-user-drag:none}
+.cmpbox .clip{position:absolute;inset:0;overflow:hidden}
+.cmpbox .bar{position:absolute;top:0;bottom:0;width:2px;background:#fff;
+  box-shadow:0 0 0 1px rgba(0,0,0,.55);pointer-events:none}
+.cmpbox .bar::after{content:"";position:absolute;top:50%;left:50%;width:26px;height:26px;
+  transform:translate(-50%,-50%);border:2px solid #fff;border-radius:50%;
+  background:rgba(0,0,0,.35)}
+.cmpbox .lbl{position:absolute;top:8px;font:10.5px var(--mono);color:#fff;
+  background:rgba(8,10,13,.72);padding:3px 8px;pointer-events:none}
+.cmpbox .lbl.l{left:8px} .cmpbox .lbl.r{right:8px}
+.strip{display:flex;gap:5px;overflow-x:auto;padding-bottom:6px;flex:none}
+.strip figure{margin:0;flex:none;width:104px;cursor:pointer;
+  border:2px solid transparent;position:relative}
+.strip figure.pre{border-color:#4a5f74} .strip figure.post{border-color:var(--ochre)}
+.strip figure.sel{border-color:#fff}
+.strip img{width:100%;display:block;image-rendering:pixelated}
+.strip figcaption{font:9.5px var(--mono);color:var(--dim);text-align:center;padding:2px 0}
+.strip .cloud{position:absolute;top:3px;right:3px;font:9px var(--mono);
+  background:rgba(8,10,13,.8);color:#d59b8f;padding:1px 4px;border-radius:2px}
+.strip figure.thin{opacity:.62}
+.insprow{display:flex;gap:16px;align-items:center;font-size:12px;color:var(--dim);flex:none}
+.insprow b{color:var(--txt);font-family:var(--mono);font-weight:500}
+.insprow .key{display:flex;align-items:center;gap:5px}
+.insprow .key s{width:10px;height:10px;display:block;text-decoration:none}
+.mini{font-size:11px;color:var(--dim2);margin-top:4px}
+.chipbtn{cursor:zoom-in}
 .tag{font:9.5px var(--mono);color:var(--dim2)}
 </style>
 </head>
@@ -187,6 +227,28 @@ svg.chart{width:100%;height:150px;display:block}
     <div class="sec"><h3>Evidence</h3><div id="evidence"><div class="empty">Select a detection.</div></div></div>
     <div class="sec" style="border:0"><h3>Provenance · hash chain</h3><div id="prov"><div class="empty">—</div></div></div>
   </div>
+</div>
+
+<div id="insp">
+  <header>
+    <h4 id="ispTitle">—</h4>
+    <span class="tag" id="ispMeta"></span>
+    <div class="sp"></div>
+    <span class="tag">drag the divider · ← → to step dates · Esc to close</span>
+    <button class="x" onclick="closeInsp()">&times;</button>
+  </header>
+  <div class="cmp"><div class="cmpbox" id="cmpbox">
+    <img id="ispAfter" alt="after">
+    <div class="clip" id="ispClip"><img id="ispBefore" alt="before"></div>
+    <div class="bar" id="ispBar"></div>
+    <span class="lbl l">BEFORE</span><span class="lbl r">AFTER</span>
+  </div></div>
+  <div class="insprow">
+    <span class="key"><s style="background:#4a5f74"></s>before the break</span>
+    <span class="key"><s style="background:#c1954f"></s>after the break</span>
+    <span id="ispHint"></span>
+  </div>
+  <div class="strip" id="ispStrip"></div>
 </div>
 
 <script src="/static/vendor/maplibre-gl.js"></script>
@@ -477,7 +539,72 @@ fetch("/api/runs").then(r=>r.json()).then(d=>{
   $("dbBadge").innerHTML="catalogue: <b>"+d.stats.runs+" runs · "+d.stats.detections+" detections</b>";});
 map.on("error",e=>{if(!MAP_OK)$("hint").textContent="Map unavailable (WebGL) - analysis panels still work.";});
 setTimeout(()=>{if(!MAP_OK)$("hint").textContent="Map unavailable (WebGL) - analysis panels still work.";},4000);
+/* ---------------- verification inspector ---------------- */
+let INSP={det:null,idx:-1};
+function openInsp(i){
+  const d=RES&&RES.detections[i]; if(!d)return;
+  INSP={det:d,idx:-1};
+  $("ispTitle").textContent=(d.certified?"Certified":"Candidate")+" · cell "+d.cell.join(",")
+    +" · "+d.bbox[1].toFixed(4)+"°N "+d.bbox[0].toFixed(4)+"°E";
+  $("ispMeta").textContent="break "+d.break_date+(d.extent?" · "+d.extent.area_ha.toFixed(2)+" ha":"");
+  $("ispBefore").src=d.chips.before;
+  $("ispAfter").src=d.chips.after;
+  $("ispHint").textContent=(d.n_pre||0)+" scenes before · "+(d.n_post||0)+" after"
+    +(d.chips.extent?" · press E for the detected extent":"");
+  const strip=d.filmstrip||[];
+  $("ispStrip").innerHTML=strip.length
+    ? strip.map((f,k)=>{
+        const u=f.usable==null?1:f.usable, thin=u<0.75;
+        return '<figure class="'+f.phase+(thin?" thin":"")+'" onclick="pickDate('+k+')" id="fs'+k+'">'
+        +'<img src="'+f.url+'" loading="lazy">'
+        +(thin?'<span class="cloud">'+Math.round((1-u)*100)+'% masked</span>':"")
+        +'<figcaption>'+f.date.slice(2)+'</figcaption></figure>';}).join("")
+    : '<div class="mini">No per-date frames for this run.</div>';
+  setDivider(0.5);
+  $("insp").classList.add("on");
+}
+function closeInsp(){$("insp").classList.remove("on");}
+function pickDate(k){
+  const d=INSP.det,f=d&&d.filmstrip&&d.filmstrip[k]; if(!f)return;
+  INSP.idx=k;
+  // compare the chosen acquisition against the opposite phase composite
+  if(f.phase==="post"){$("ispAfter").src=f.url;$("ispBefore").src=d.chips.before;}
+  else {$("ispBefore").src=f.url;$("ispAfter").src=d.chips.after;}
+  document.querySelectorAll(".strip figure").forEach((e,n)=>e.classList.toggle("sel",n===k));
+  $("ispMeta").textContent=f.date+" ("+f.phase+" the break"
+    +(f.usable!=null&&f.usable<0.99?", "+Math.round((1-f.usable)*100)+"% cloud-masked":"")+")";
+}
+function setDivider(frac){
+  const box=$("cmpbox"); if(!box)return;
+  const pct=Math.max(0,Math.min(1,frac))*100;
+  $("ispClip").style.width=pct+"%";
+  $("ispBar").style.left=pct+"%";
+  $("ispBefore").style.width=box.clientWidth+"px";
+}
+(function(){
+  const box=$("cmpbox"); let drag=false;
+  const at=e=>{const r=box.getBoundingClientRect();
+    const x=(e.touches?e.touches[0].clientX:e.clientX)-r.left;return x/r.width;};
+  box.addEventListener("mousedown",e=>{drag=true;setDivider(at(e));});
+  box.addEventListener("touchstart",e=>{drag=true;setDivider(at(e));},{passive:true});
+  window.addEventListener("mousemove",e=>{if(drag)setDivider(at(e));});
+  window.addEventListener("touchmove",e=>{if(drag)setDivider(at(e));},{passive:true});
+  window.addEventListener("mouseup",()=>drag=false);
+  window.addEventListener("touchend",()=>drag=false);
+  window.addEventListener("resize",()=>setDivider(
+    parseFloat($("ispClip").style.width||"50")/100));
+})();
+
 document.addEventListener("keydown",e=>{
+  if($("insp").classList.contains("on")){
+    const d=INSP.det,n=(d&&d.filmstrip||[]).length;
+    if(e.key==="Escape")closeInsp();
+    if(e.key==="ArrowRight"&&n)pickDate(Math.min(n-1,INSP.idx+1));
+    if(e.key==="ArrowLeft"&&n)pickDate(Math.max(0,INSP.idx-1));
+    if((e.key==="e"||e.key==="E")&&d&&d.chips.extent){
+      const a=$("ispAfter");a.src=a.src.includes("extent")?d.chips.after:d.chips.extent;}
+    e.preventDefault();return;
+  }
   if(e.target.tagName==="INPUT")return;
   if(e.key==="ArrowDown"&&RES)select(Math.min(RES.detections.length-1,SEL+1));
   if(e.key==="ArrowUp"&&RES)select(Math.max(0,SEL-1));});
