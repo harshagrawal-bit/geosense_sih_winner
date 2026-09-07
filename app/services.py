@@ -1,5 +1,4 @@
 """Application services: API-facing use cases, not infrastructure details."""
-"""izyan"""
 from __future__ import annotations
 
 import traceback

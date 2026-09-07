@@ -1,0 +1,110 @@
+{
+ "aoi": [
+  77.0,
+  28.35,
+  77.1,
+  28.45
+ ],
+ "dates": [
+  "2024-01-14",
+  "2024-03-09",
+  "2024-04-18",
+  "2024-05-18",
+  "2024-06-17",
+  "2024-09-15",
+  "2024-10-10",
+  "2024-11-09",
+  "2024-12-04",
+  "2025-01-23",
+  "2025-02-22",
+  "2025-03-24",
+  "2025-04-18",
+  "2025-06-02",
+  "2025-09-15",
+  "2025-10-10",
+  "2025-11-09",
+  "2025-11-29",
+  "2026-01-13",
+  "2026-02-27",
+  "2026-04-18",
+  "2026-06-02",
+  "2026-07-07"
+ ],
+ "grid": [
+  16,
+  16
+ ],
+ "alpha": 0.1,
+ "null": [
+  {
+   "magnitude": 0.0,
+   "recall": NaN,
+   "precision": NaN,
+   "fdr": 0.0,
+   "detected": 0.0,
+   "repeats": 8
+  }
+ ],
+ "sweep": [
+  {
+   "magnitude": 0.02,
+   "recall": 0.0,
+   "precision": NaN,
+   "fdr": 0.0,
+   "detected": 0.0,
+   "repeats": 5
+  },
+  {
+   "magnitude": 0.04,
+   "recall": 0.0,
+   "precision": NaN,
+   "fdr": 0.0,
+   "detected": 0.0,
+   "repeats": 5
+  },
+  {
+   "magnitude": 0.06,
+   "recall": 0.26666666666666666,
+   "precision": 1.0,
+   "fdr": 0.0,
+   "detected": 1.2,
+   "repeats": 5
+  },
+  {
+   "magnitude": 0.08,
+   "recall": 0.8,
+   "precision": 1.0,
+   "fdr": 0.0,
+   "detected": 4.8,
+   "repeats": 5
+  },
+  {
+   "magnitude": 0.12,
+   "recall": 1.0,
+   "precision": 1.0,
+   "fdr": 0.0,
+   "detected": 11.4,
+   "repeats": 5
+  },
+  {
+   "magnitude": 0.16,
+   "recall": 1.0,
+   "precision": 1.0,
+   "fdr": 0.0,
+   "detected": 11.8,
+   "repeats": 5
+  },
+  {
+   "magnitude": 0.24,
+   "recall": 1.0,
+   "precision": 1.0,
+   "fdr": 0.0,
+   "detected": 13.0,
+   "repeats": 5
+  }
+ ],
+ "min_detectable_50": 0.06875,
+ "min_detectable_80": 0.08,
+ "empirical_fdr": 0.0,
+ "seconds": 142.3
+}

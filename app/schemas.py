@@ -36,6 +36,7 @@ class QueryRequest(BaseModel):
     max_scenes: int = Field(default=24, ge=8, le=40)
     sources: list[str] = Field(default_factory=lambda: ["sentinel-2-l2a"])
     use_sar: bool = False
+    use_semantic: bool = False
 
 
 class RunRequest(AOI, QueryRequest):

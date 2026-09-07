@@ -5,6 +5,7 @@ from dataclasses import dataclass
 import numpy as np
 
 from . import catalog, raster, change, query as Q, rank, provenance
+from . import semantic as clip_tier   # aliased: `semantic` is a local below
 from .config import SOURCES, CELL, GRID_PX, CACHE_DIR
 from .contracts import (CatalogPort, ConfirmationPort, ImageryPort, ProvenancePort,
                         RankingPort, SarEvidencePort, SemanticRetrievalPort,
@@ -62,7 +63,7 @@ def sar_tier(bbox, start, end, split_date, ny, nx, say, max_scenes=14):
 
 
 def run(bbox, text, months=None, alpha=0.10, sources=("sentinel-2-l2a",),
-        use_sar=False, max_scenes=24, cloud=40, job=None, run_id=None,
+        use_sar=False, use_semantic=False, max_scenes=24, cloud=40, job=None, run_id=None,
         dependencies: PipelineDependencies | None = None):
     """Run the current algorithms through the explicit TIP → CUE → CONFIRM flow."""
     t0 = time.time()
@@ -238,6 +239,7 @@ def run(bbox, text, months=None, alpha=0.10, sources=("sentinel-2-l2a",),
     # -------------------------------------------------- 7. detections -----
     order = np.argsort(-fused.ravel())
     dets, seen = [], set()
+    chip_pre, chip_post = [], []          # kept for the semantic tier below
     for flat in order:
         j, i = divmod(int(flat), nx)
         if len(dets) >= 12:
@@ -265,11 +267,14 @@ def run(bbox, text, months=None, alpha=0.10, sources=("sentinel-2-l2a",),
             return {c: np.nanmedian(st[c][idxs][(slice(None),) + box], axis=0)
                     for c in ("red", "green", "blue")}
 
-        sp = dependencies.imagery.rgb_png(med(pre_k, sl),
+        img_pre, img_post = med(pre_k, sl), med(post_k, sl)
+        sp = dependencies.imagery.rgb_png(img_pre,
                             os.path.join(outdir, f"c{cid}_before.png"), size=320)
-        dependencies.imagery.rgb_png(med(post_k, sl),
+        dependencies.imagery.rgb_png(img_post,
                        os.path.join(outdir, f"c{cid}_after.png"), size=320,
                        stretch=sp)
+        chip_pre.append(np.dstack([img_pre[c] for c in ("red", "green", "blue")]))
+        chip_post.append(np.dstack([img_post[c] for c in ("red", "green", "blue")]))
 
         deltas = {k: float(np.nanmean(cells[k][post_k, j, i]) -
                            np.nanmean(cells[k][pre_k, j, i])) for k in cells}
@@ -295,6 +300,37 @@ def run(bbox, text, months=None, alpha=0.10, sources=("sentinel-2-l2a",),
                       "after": f"/chips/{run_id}/c{cid}_after.png"},
         })
 
+    # ====================================================== SEMANTIC ===
+    # Statistics propose, semantics re-rank. Embedding all 256 cells would cost
+    # roughly seven minutes on this CPU; embedding only the candidates the
+    # change detector already surfaced applies the same tip-and-cue logic to
+    # the expensive model that the pipeline applies to the expensive sensor.
+    sem = {"used": False, **clip_tier.status()}
+    if use_semantic and dets:
+        say("verify", 90, f"Semantic re-rank: embedding {len(dets)} chip pairs")
+        try:
+            qvec = clip_tier.query_vector(text, q["signature"])
+            scores = clip_tier.delta_scores(chip_pre, chip_post, qvec)
+            if scores is not None:
+                sem = {"used": True, **clip_tier.status(), "n_pairs": len(dets),
+                       "prompt": clip_tier.SIGNATURE_PROMPTS.get(q["signature"])}
+                for d, sc in zip(dets, scores):
+                    d["semantic"] = round(float(sc), 4)
+                # Fuse the statistical order with the semantic order so neither
+                # stream can override the other outright.
+                stat_rank = np.arange(len(dets), dtype=float)
+                sem_rank = dependencies.ranking.ranks_of(np.asarray(scores))
+                keep = np.argsort(-dependencies.ranking.rrf(stat_rank, sem_rank))
+                dets = [dets[i] for i in keep]
+                for n, d in enumerate(dets, 1):
+                    d["rank"] = n
+                chain.add("semantic", {k: v for k, v in sem.items() if v is not None})
+            else:
+                sem["error"] = sem.get("error") or "model unavailable"
+        except Exception as ex:
+            sem["error"] = f"{type(ex).__name__}: {str(ex)[:140]}"
+            say("verify", 92, "Semantic tier unavailable - keeping statistical order")
+
     # ========================================================= CONFIRM ===
     # Only the ranked shortlist enters confirmation. The adapter makes a
     # conservative decision from evidence already attached to each candidate.
@@ -318,7 +354,7 @@ def run(bbox, text, months=None, alpha=0.10, sources=("sentinel-2-l2a",),
         "grid": [ny, nx], "alpha": alpha, "bh_threshold": thr,
         "composite": mode,
         "dates": dates, "model_dates": kept_dates, "split_date": split_date,
-        "sources": per_source, "scenes_used": len(dates),
+        "sources": per_source, "scenes_used": len(dates), "semantic": sem,
         "sar": None if not sar else {"scenes": sar["n"], "first": sar["dates"][0],
                                      "last": sar["dates"][-1]},
         "candidates": len(items),
@@ -342,5 +378,6 @@ def run_request(request: RunRequest, dependencies: PipelineDependencies | None =
     """Typed application-service entry point; external API payload stays unchanged."""
     return run(tuple(request.bbox), request.query, months=request.months,
                alpha=request.alpha, sources=tuple(request.sources), use_sar=request.use_sar,
+               use_semantic=request.use_semantic,
                max_scenes=request.max_scenes, cloud=request.cloud, job=progress,
                dependencies=dependencies)

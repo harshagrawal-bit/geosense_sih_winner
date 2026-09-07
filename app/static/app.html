@@ -144,6 +144,9 @@ svg.chart{width:100%;height:150px;display:block}
       <label style="display:flex;align-items:center;gap:7px;margin-top:10px;color:var(--dim)">
         <input type="checkbox" id="sar" style="width:auto"> Add Sentinel-1 SAR tier (ADI, cloud-independent)
       </label>
+      <label style="display:flex;align-items:center;gap:7px;margin-top:7px;color:var(--dim)">
+        <input type="checkbox" id="sem" style="width:auto"> Semantic re-rank with RemoteCLIP (slow, ~1.5 GB RAM)
+      </label>
       <button class="btn" id="runBtn">Run analysis</button>
       <div class="pbar"><i id="pbar"></i></div>
       <div class="stage" id="s1"><i>01</i><div><div class="n">Discover</div><div class="d">STAC search · windowed COG reads</div></div></div>
@@ -289,7 +292,7 @@ $("runBtn").onclick=async()=>{
     const r=await fetch("/api/run",{method:"POST",headers:{"Content-Type":"application/json"},
       body:JSON.stringify({bbox,query:$("q").value,alpha:+$("alpha").value,
         cloud:+$("cloud").value,max_scenes:+$("maxsc").value,
-        sources:$("src").value.split(","),use_sar:$("sar").checked})});
+        sources:$("src").value.split(","),use_sar:$("sar").checked,use_semantic:$("sem").checked})});
     if(!r.ok){const t=await r.json();throw new Error(t.detail||"request rejected");}
     poll((await r.json()).job);
   }catch(ex){fail(ex.message);}
@@ -347,7 +350,10 @@ function render(res){
     ["BH threshold","p ≤ "+res.bh_threshold.toExponential(2)],
     ["Certified",cert+" / "+res.detections.length],
     ["Runtime",res.took+" s"],
-  ].concat(res.sar?[["SAR scenes",res.sar.scenes+" (S1 RTC)"]]:[]).map(k=>'<div class="kv"><span>'+k[0]+"</span><b>"+k[1]+"</b></div>").join("")
+  ].concat(res.sar?[["SAR scenes",res.sar.scenes+" (S1 RTC)"]]:[])
+   .concat(res.semantic&&res.semantic.used?[["Semantic model",res.semantic.backend],
+            ["Chip pairs embedded",res.semantic.n_pairs]]:[])
+   .concat(res.semantic&&!res.semantic.used&&res.semantic.error?[["Semantic tier","off — "+res.semantic.error]]:[]).map(k=>'<div class="kv"><span>'+k[0]+"</span><b>"+k[1]+"</b></div>").join("")
    +'<div class="pair" style="margin-top:11px">'
    +'<figure><img src="'+res.images.before+'"><figcaption>before · median to '+res.split_date+"</figcaption></figure>"
    +'<figure><img src="'+res.images.after+'"><figcaption>after · median from '+res.split_date+"</figcaption></figure></div>";
@@ -395,6 +401,8 @@ function select(i){
     +'<div class="kv"><span>confidence</span><b>'+d.confidence.toFixed(1)+"%</b></div>"
     +'<div class="kv"><span>certified at α='+RES.alpha+"</span><b>"+(d.certified?"yes":"no")+"</b></div>"
     +deltas
+    +(d.semantic!==undefined?('<div class="kv"><span>semantic Δ (after−before)</span><b>'
+        +(d.semantic>=0?"+":"")+d.semantic.toFixed(3)+"</b></div>"):"")
     +(d.sar?('<div class="kv"><span>ADI before → after</span><b>'
         +(d.sar.adi_pre??"—")+" → "+(d.sar.adi_post??"—")+"</b></div>"
         +'<div class="kv"><span>SAR max-t</span><b>'+(d.sar.z??"—")+"</b></div>"):"")
