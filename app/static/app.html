@@ -400,6 +400,9 @@ function select(i){
     '<div class="pair"><figure><img src="'+d.chips.before+'"><figcaption>before</figcaption></figure>'
     +'<figure><img src="'+d.chips.after+'"><figcaption>after</figcaption></figure></div>'
     +'<div style="margin-top:10px">'
+    +(d.extent?('<div class="kv"><span>changed area</span><b>'+d.extent.area_ha.toFixed(2)
+        +" ha</b></div>"+'<div class="kv"><span>changed pixels</span><b>'+d.extent.pixels
+        +" @ "+d.extent.pixel_m+" m</b></div>"):"")
     +'<div class="kv"><span>break date</span><b>'+d.break_date+"</b></div>"
     +'<div class="kv"><span>max-t statistic</span><b>'+d.z.toFixed(2)+"</b></div>"
     +'<div class="kv"><span>conformal p</span><b>'+d.p.toExponential(2)+"</b></div>"

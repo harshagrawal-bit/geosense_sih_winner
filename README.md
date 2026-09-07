@@ -93,6 +93,31 @@ chain — no server, no network. Everything persists to DuckDB (`app/store.py`).
 
 ---
 
+## Measured extent
+
+A detection used to be a 550 m cell with no size, which is not actionable. Each
+flagged cell is now segmented at full image resolution (`app/segment.py`) and
+reported in hectares, with a tight bounding box and an overlay chip:
+
+```
+cell[4, 8]   z=+2.83    5.31 ha (57 px @ 30.5 m)   break 2025-03-09
+cell[3, 2]   z=+2.12    2.61 ha (28 px @ 30.5 m)   break 2024-10-30
+```
+
+The cell grid exists because the statistics need a time series per unit, not
+because 550 m is the resolution of the answer - the imagery is still ~30 m per
+pixel, so the footprint can be recovered once a cell has been flagged.
+
+**This deliberately does not use SAM.** SAM segments *objects* by appearance;
+what is needed here is the extent of a *change*, which is defined by the same
+composite index difference the detector already tested. Thresholding that
+difference (robustly, via median absolute deviation, so the change cannot
+inflate its own threshold) segments exactly the thing that was detected, needs
+no model or GPU, and cannot disagree with the statistic that raised the alarm.
+
+A cell can legitimately report **no extent**: the cell-level statistic found a
+diffuse shift rather than a compact patch. That is information, not a failure.
+
 ## Vector index
 
 Runs with "Semantic re-rank" ticked store each candidate's 512-d RemoteCLIP

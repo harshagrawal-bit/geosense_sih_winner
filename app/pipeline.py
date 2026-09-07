@@ -6,6 +6,7 @@ import numpy as np
 
 from . import catalog, raster, change, query as Q, rank, provenance
 from . import semantic as clip_tier   # aliased: `semantic` is a local below
+from . import segment
 from .config import SOURCES, CELL, GRID_PX, CACHE_DIR
 from .contracts import (CatalogPort, ConfirmationPort, ImageryPort, ProvenancePort,
                         RankingPort, SarEvidencePort, SemanticRetrievalPort,
@@ -285,6 +286,29 @@ def run(bbox, text, months=None, alpha=0.10, sources=("sentinel-2-l2a",),
 
         deltas = {k: float(np.nanmean(cells[k][post_k, j, i]) -
                            np.nanmean(cells[k][pre_k, j, i])) for k in cells}
+
+        # Per-pixel extent inside the cell. The cell grid exists because the
+        # statistics need a time series per unit, not because 550 m is the
+        # resolution of the answer - so recover the actual footprint at full
+        # image resolution now that this cell has been flagged.
+        y1, x1 = sl[0].stop, sl[1].stop
+        win_bbox = (bbox[0] + (bbox[2] - bbox[0]) * sl[1].start / GRID_PX,
+                    bbox[3] - (bbox[3] - bbox[1]) * y1 / GRID_PX,
+                    bbox[0] + (bbox[2] - bbox[0]) * x1 / GRID_PX,
+                    bbox[3] - (bbox[3] - bbox[1]) * sl[0].start / GRID_PX)
+        crop = (slice(None),) + sl
+        pre_ix = {k: np.nanmedian(v[pre_k][crop], axis=0) for k, v in ix.items()}
+        post_ix = {k: np.nanmedian(v[post_k][crop], axis=0) for k, v in ix.items()}
+        dmap = segment.composite_delta(pre_ix, post_ix, q["targets"])
+        extent, mask_box = None, None
+        if dmap is not None:
+            blob = segment.largest_blob(segment.threshold(dmap))
+            if blob.any():
+                extent = segment.measure(blob, bbox, GRID_PX)
+                mask_box = segment.mask_bbox(blob, win_bbox)
+                segment.outline_png(
+                    np.dstack([img_post[c] for c in ("red", "green", "blue")]),
+                    blob, os.path.join(outdir, f"c{cid}_extent.png"))
         dets.append({
             "id": f"{run_id}-{cid}", "cell": [j, i],
             "bbox": _cell_bbox(bbox, j, i, ny, nx),
@@ -294,6 +318,8 @@ def run(bbox, text, months=None, alpha=0.10, sources=("sentinel-2-l2a",),
             "n_pre": len(pre_k), "n_post": len(post_k),
             "magnitude": float(mag2[j, i]),
             "deltas": deltas,
+            "extent": extent,
+            "extent_bbox": mask_box,
             "confirmation": {"targets": q["targets"], "temporal": {
                 "z": float(z2[j, i]), "p": pv, "magnitude": float(mag2[j, i]),
             }},
@@ -304,7 +330,9 @@ def run(bbox, text, months=None, alpha=0.10, sources=("sentinel-2-l2a",),
             "series": {k: [None if not np.isfinite(v) else round(float(v), 4)
                            for v in cells[k][:, j, i]] for k in cells},
             "chips": {"before": f"/chips/{run_id}/c{cid}_before.png",
-                      "after": f"/chips/{run_id}/c{cid}_after.png"},
+                      "after": f"/chips/{run_id}/c{cid}_after.png",
+                      **({"extent": f"/chips/{run_id}/c{cid}_extent.png"}
+                         if extent else {})},
         })
 
     # ====================================================== SEMANTIC ===
