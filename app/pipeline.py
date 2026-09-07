@@ -322,7 +322,7 @@ def run(bbox, text, months=None, alpha=0.10, sources=("sentinel-2-l2a",),
                 sem = {"used": True, **clip_tier.status(), "n_pairs": len(dets),
                        "prompt": clip_tier.SIGNATURE_PROMPTS.get(q["signature"])}
                 for d, sc in zip(dets, scores):
-                    d["semantic"] = round(float(sc), 4)
+                    d["clip_delta"] = round(float(sc), 4)
                 # Fuse the statistical order with the semantic order so neither
                 # stream can override the other outright.
                 stat_rank = np.arange(len(dets), dtype=float)
@@ -331,7 +331,7 @@ def run(bbox, text, months=None, alpha=0.10, sources=("sentinel-2-l2a",),
                 dets = [dets[i] for i in keep]
                 for n, d in enumerate(dets, 1):
                     d["rank"] = n
-                chain.add("semantic", {k: v for k, v in sem.items() if v is not None})
+                chain.add("clip_rerank", {k: v for k, v in sem.items() if v is not None})
             else:
                 sem["error"] = sem.get("error") or "model unavailable"
         except Exception as ex:
@@ -361,7 +361,7 @@ def run(bbox, text, months=None, alpha=0.10, sources=("sentinel-2-l2a",),
         "grid": [ny, nx], "alpha": alpha, "bh_threshold": thr,
         "composite": mode,
         "dates": dates, "model_dates": kept_dates, "split_date": split_date,
-        "sources": per_source, "scenes_used": len(dates), "semantic": sem,
+        "sources": per_source, "scenes_used": len(dates), "clip": sem,
         "sar": None if not sar else {"scenes": sar["n"], "first": sar["dates"][0],
                                      "last": sar["dates"][-1]},
         "candidates": len(items),

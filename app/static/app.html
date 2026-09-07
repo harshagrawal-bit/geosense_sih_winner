@@ -319,7 +319,8 @@ async function poll(job){
 function showParsed(q){$("parsed").innerHTML=q.explain.map(e=>"› "+e).join("<br>");}
 
 function render(res){
-  RES=res; showParsed(res.query);
+  RES=res;
+  try{showParsed(res.query);}catch(e){console.warn("parsed panel:",e);}
   const cert=res.detections.filter(d=>d.certified).length;
   const semantic=res.semantic;
   $("semantic").innerHTML=semantic?[
@@ -351,9 +352,9 @@ function render(res){
     ["Certified",cert+" / "+res.detections.length],
     ["Runtime",res.took+" s"],
   ].concat(res.sar?[["SAR scenes",res.sar.scenes+" (S1 RTC)"]]:[])
-   .concat(res.semantic&&res.semantic.used?[["Semantic model",res.semantic.backend],
-            ["Chip pairs embedded",res.semantic.n_pairs]]:[])
-   .concat(res.semantic&&!res.semantic.used&&res.semantic.error?[["Semantic tier","off — "+res.semantic.error]]:[]).map(k=>'<div class="kv"><span>'+k[0]+"</span><b>"+k[1]+"</b></div>").join("")
+   .concat(res.clip&&res.clip.used?[["CLIP model",res.clip.backend],
+            ["Chip pairs embedded",res.clip.n_pairs]]:[])
+   .concat(res.clip&&!res.clip.used&&res.clip.error?[["CLIP re-rank","off — "+res.clip.error]]:[]).map(k=>'<div class="kv"><span>'+k[0]+"</span><b>"+k[1]+"</b></div>").join("")
    +'<div class="pair" style="margin-top:11px">'
    +'<figure><img src="'+res.images.before+'"><figcaption>before · median to '+res.split_date+"</figcaption></figure>"
    +'<figure><img src="'+res.images.after+'"><figcaption>after · median from '+res.split_date+"</figcaption></figure></div>";
@@ -401,8 +402,8 @@ function select(i){
     +'<div class="kv"><span>confidence</span><b>'+d.confidence.toFixed(1)+"%</b></div>"
     +'<div class="kv"><span>certified at α='+RES.alpha+"</span><b>"+(d.certified?"yes":"no")+"</b></div>"
     +deltas
-    +(d.semantic!==undefined?('<div class="kv"><span>semantic Δ (after−before)</span><b>'
-        +(d.semantic>=0?"+":"")+d.semantic.toFixed(3)+"</b></div>"):"")
+    +(d.clip_delta!==undefined?('<div class="kv"><span>CLIP Δ (after−before)</span><b>'
+        +(d.clip_delta>=0?"+":"")+d.clip_delta.toFixed(3)+"</b></div>"):"")
     +(d.sar?('<div class="kv"><span>ADI before → after</span><b>'
         +(d.sar.adi_pre??"—")+" → "+(d.sar.adi_post??"—")+"</b></div>"
         +'<div class="kv"><span>SAR max-t</span><b>'+(d.sar.z??"—")+"</b></div>"):"")
