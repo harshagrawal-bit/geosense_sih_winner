@@ -273,8 +273,15 @@ def run(bbox, text, months=None, alpha=0.10, sources=("sentinel-2-l2a",),
         dependencies.imagery.rgb_png(img_post,
                        os.path.join(outdir, f"c{cid}_after.png"), size=320,
                        stretch=sp)
-        chip_pre.append(np.dstack([img_pre[c] for c in ("red", "green", "blue")]))
-        chip_post.append(np.dstack([img_post[c] for c in ("red", "green", "blue")]))
+        # CLIP gets a wider crop than the evidence panel does. A 32 px patch
+        # carries almost no context and CLIP was trained on whole scenes, so
+        # the tight chip that is right for a human reviewer is the wrong input
+        # for the model. The pixels are already in memory, so this is free.
+        wide = (slice(max(y0 - 2 * CELL, 0), min(y0 + 3 * CELL, GRID_PX)),
+                slice(max(x0 - 2 * CELL, 0), min(x0 + 3 * CELL, GRID_PX)))
+        wp, wq = med(pre_k, wide), med(post_k, wide)
+        chip_pre.append(np.dstack([wp[c] for c in ("red", "green", "blue")]))
+        chip_post.append(np.dstack([wq[c] for c in ("red", "green", "blue")]))
 
         deltas = {k: float(np.nanmean(cells[k][post_k, j, i]) -
                            np.nanmean(cells[k][pre_k, j, i])) for k in cells}
