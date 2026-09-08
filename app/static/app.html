@@ -131,6 +131,15 @@ svg.chart{width:100%;height:150px;display:block}
 .v-contradicted{border-left-color:#cf7368} .v-contradicted b{color:#cf7368}
 .verdict ul{margin:6px 0 0;padding-left:15px;color:var(--dim)}
 .verdict li{margin:3px 0}
+.thumbs{display:flex;gap:3px;margin-top:8px;cursor:zoom-in;position:relative;
+  border:1px solid var(--line);padding:3px;background:#191d23}
+.thumbs:hover{border-color:var(--ochre)}
+.thumbs img{width:0;flex:1;height:52px;object-fit:cover;display:block;
+  image-rendering:pixelated;background:#000}
+.thumbs .mag{position:absolute;right:5px;bottom:5px;font:9px var(--mono);
+  background:rgba(8,10,13,.82);color:var(--txt);padding:1px 5px;border-radius:2px;
+  opacity:0;transition:opacity .12s}
+.thumbs:hover .mag{opacity:1}
 .res .flag{position:absolute;top:9px;right:11px;font:9px var(--mono);
   padding:1px 5px;border-radius:2px}
 .f-contradicted{background:#3a201c;color:#cf7368}
@@ -457,7 +466,14 @@ function render(res){
     +'<div class="m">'+d.bbox[1].toFixed(3)+"°N "+d.bbox[0].toFixed(3)+"°E · cell "+d.cell.join(",")+"</div>"
     +'<div class="b"><span class="pill '+(d.certified?"p-c":"p-u")+'">'+(d.certified?"FDR ≤ α":"below α")+"</span>"
     +'<span class="tag">z '+d.z.toFixed(2)+" · p "+d.p.toExponential(1)+'</span>'
-    +'<span class="cf">'+d.confidence.toFixed(1)+"%</span></div></div>").join("")
+    +'<span class="cf">'+d.confidence.toFixed(1)+"%</span></div>"
+    +'<div class="thumbs" onclick="event.stopPropagation();openInsp('+i+')" '
+      +'title="Open before/after comparison">'
+      +'<img src="'+d.chips.before+'" loading="lazy" alt="before">'
+      +'<img src="'+d.chips.after+'" loading="lazy" alt="after">'
+      +(d.chips.extent?'<img src="'+d.chips.extent+'" loading="lazy" alt="extent">':"")
+      +'<span class="mag">compare &rarr;</span>'
+    +"</div></div>").join("")
     : '<div class="empty">No cell exceeded the noise floor for this signature. That is a result: nothing here changed detectably. Try a longer window, a different signature, or a larger AOI.</div>';
 
   DETF=res.detections.map((d,i)=>{const f=rect(d.bbox);
