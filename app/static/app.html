@@ -121,6 +121,21 @@ svg.chart{width:100%;height:150px;display:block}
 .insprow .key{display:flex;align-items:center;gap:5px}
 .insprow .key s{width:10px;height:10px;display:block;text-decoration:none}
 .mini{font-size:11px;color:var(--dim2);margin-top:4px}
+.verdict{border-left:3px solid var(--line2);padding:8px 11px;margin-top:9px;
+  background:#1f232a;font-size:11.5px;line-height:1.5}
+.verdict b{display:block;font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;
+  margin-bottom:3px}
+.v-supported{border-left-color:var(--moss)} .v-supported b{color:var(--moss)}
+.v-reclassified{border-left-color:var(--steel)} .v-reclassified b{color:var(--steel)}
+.v-implausible{border-left-color:var(--ochre)} .v-implausible b{color:var(--ochre)}
+.v-contradicted{border-left-color:#cf7368} .v-contradicted b{color:#cf7368}
+.verdict ul{margin:6px 0 0;padding-left:15px;color:var(--dim)}
+.verdict li{margin:3px 0}
+.res .flag{position:absolute;top:9px;right:11px;font:9px var(--mono);
+  padding:1px 5px;border-radius:2px}
+.f-contradicted{background:#3a201c;color:#cf7368}
+.f-implausible{background:#2f2718;color:#c9a061}
+.f-reclassified{background:#1e262e;color:#7fa3bf}
 .chipbtn{cursor:zoom-in}
 .tag{font:9.5px var(--mono);color:var(--dim2)}
 </style>
@@ -436,6 +451,8 @@ function render(res){
 
   $("results").innerHTML=res.detections.length? res.detections.map((d,i)=>
     '<div class="res'+(d.certified?" cert":"")+'" id="r'+i+'" onclick="select('+i+')">'
+    +((d.change_type&&d.change_type.level&&d.change_type.level!=="supported")
+        ?'<span class="flag f-'+d.change_type.level+'">'+d.change_type.level+'</span>':"")
     +'<div class="t">'+(d.certified?"Certified change":"Candidate")+" · "+d.break_date+"</div>"
     +'<div class="m">'+d.bbox[1].toFixed(3)+"°N "+d.bbox[0].toFixed(3)+"°E · cell "+d.cell.join(",")+"</div>"
     +'<div class="b"><span class="pill '+(d.certified?"p-c":"p-u")+'">'+(d.certified?"FDR ≤ α":"below α")+"</span>"
@@ -483,6 +500,19 @@ function select(i){
     +"</div>"
     +'<div style="margin-top:11px" class="tag">index time series · red line = detected break</div>'
     +chart(d);
+}
+
+function verdictHtml(d){
+  const c=d.change_type; if(!c)return "";
+  const t={supported:"Evidence supports the query",reclassified:"Looks like a different change",
+           implausible:"Physically implausible",contradicted:"Evidence contradicts the query"}[c.level]||c.level;
+  let h='<div class="verdict v-'+c.level+'"><b>'+t+'</b>'+c.message;
+  if(c.predicted_label&&c.predicted!==c.requested)
+    h+='<br>Image model says: <b style="display:inline;text-transform:none;letter-spacing:0;font-size:11.5px">'
+      +c.predicted_label+'</b>';
+  if(c.failures&&c.failures.length)
+    h+='<ul>'+c.failures.map(f=>'<li>'+f.text+'</li>').join("")+'</ul>';
+  return h+'</div>';
 }
 
 function chart(d){

@@ -6,7 +6,7 @@ import numpy as np
 
 from . import catalog, raster, change, query as Q, rank, provenance
 from . import semantic as clip_tier   # aliased: `semantic` is a local below
-from . import segment
+from . import segment, classify
 from .config import SOURCES, CELL, GRID_PX, CACHE_DIR
 from .contracts import (CatalogPort, ConfirmationPort, ImageryPort, ProvenancePort,
                         RankingPort, SarEvidencePort, SemanticRetrievalPort,
@@ -303,8 +303,12 @@ def run(bbox, text, months=None, alpha=0.10, sources=("sentinel-2-l2a",),
                           "phase": "pre" if k in pre_k else "post",
                           "usable": round(usable, 3)})
 
-        deltas = {k: float(np.nanmean(cells[k][post_k, j, i]) -
-                           np.nanmean(cells[k][pre_k, j, i])) for k in cells}
+        pre_lv = {k: float(np.nanmean(cells[k][pre_k, j, i])) for k in cells}
+        post_lv = {k: float(np.nanmean(cells[k][post_k, j, i])) for k in cells}
+        deltas = {k: post_lv[k] - pre_lv[k] for k in cells}
+        # Physical gates: is the requested class even possible given where the
+        # indices ended up? Direction of change alone cannot answer that.
+        gate_failures = classify.check(q["signature"], pre_lv, post_lv, deltas)
 
         # Per-pixel extent inside the cell. The cell grid exists because the
         # statistics need a time series per unit, not because 550 m is the
@@ -337,6 +341,12 @@ def run(bbox, text, months=None, alpha=0.10, sources=("sentinel-2-l2a",),
             "n_pre": len(pre_k), "n_post": len(post_k),
             "magnitude": float(mag2[j, i]),
             "deltas": deltas,
+            "levels": {"pre": {k: round(v, 3) for k, v in pre_lv.items()},
+                       "post": {k: round(v, 3) for k, v in post_lv.items()}},
+            "change_type": {"requested": q["signature"],
+                            "requested_label": q["label"],
+                            "predicted": None, "failures": gate_failures,
+                            **classify.verdict(q["signature"], None, gate_failures)},
             "extent": extent,
             "extent_bbox": mask_box,
             "confirmation": {"targets": q["targets"], "temporal": {
@@ -365,8 +375,8 @@ def run(bbox, text, months=None, alpha=0.10, sources=("sentinel-2-l2a",),
         say("verify", 90, f"Semantic re-rank: embedding {len(dets)} chip pairs")
         try:
             qvec = clip_tier.query_vector(text, q["signature"])
-            scores, vecs = clip_tier.delta_scores(chip_pre, chip_post, qvec,
-                                                  return_vectors=True)
+            scores, vecs, vecs_before = clip_tier.delta_scores(
+                chip_pre, chip_post, qvec, return_vectors=True)
             if scores is not None:
                 sem = {"used": True, **clip_tier.status(), "n_pairs": len(dets),
                        "prompt": clip_tier.SIGNATURE_PROMPTS.get(q["signature"])}
@@ -382,6 +392,21 @@ def run(bbox, text, months=None, alpha=0.10, sources=("sentinel-2-l2a",),
                 dets = [dets[i] for i in keep]
                 for n, d in enumerate(dets, 1):
                     d["rank"] = n
+                # The same embeddings answer a second question for free:
+                # not "how well does this match the query" but "what kind of
+                # change is this actually?"
+                types = clip_tier.classify_change(vecs_before, vecs)
+                if types:
+                    for d, t in zip(dets, types):
+                        ct = d["change_type"]
+                        ct.update(predicted=t["predicted"],
+                                  predicted_label=t["label"],
+                                  classifier=t["source"],
+                                  type_margin=t["margin"],
+                                  ranked=t["ranked"])
+                        ct.update(classify.verdict(ct["requested"],
+                                                   t["predicted"],
+                                                   ct["failures"]))
                 chain.add("clip_rerank", {k: v for k, v in sem.items() if v is not None})
             else:
                 sem["error"] = sem.get("error") or "model unavailable"

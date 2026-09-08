@@ -497,10 +497,26 @@ footer{font-family:var(--sans);font-size:13.5px;color:var(--dim);
       "is this actually a flood?"</li>
     </ol>
   </div>
-  <p><b>The fix</b> is change-type classification: classify each detection from
-  its own evidence rather than only testing what was asked, add absolute gates
-  (a flood must end up wet), and warn when the evidence disagrees with the
-  query. That work is identified and not yet built.</p>
+  <div class="callout good">
+    <p><b>This is now fixed.</b> Every detection is classified from its own
+    evidence — RemoteCLIP scores the before/after pair against all nine change
+    types, and physical gates check that the resulting state is possible at all
+    (a flood must end up <em>wet</em>). Re-running the same desert query:</p>
+    <pre>certified: 0 of 4   (previously 1 of 4)
+
+cell[3,0]   CONTRADICTED  looks like Vegetation / forest loss
+   MNDWI post = -0.401, needs >= -0.15 - well below water
+   NDBI delta = +0.147, needs <= 0.02 - water lowers NDBI
+   BSI  delta = +0.139, needs <= 0.05 - bare soil rose instead
+cell[1,0]   RECLASSIFIED  looks like Quarrying / bare ground
+cell[15,14] IMPLAUSIBLE   3 physical checks fail
+cell[9,6]   CONTRADICTED  looks like Water body contraction</pre>
+    <p>Four verdict levels are reported: <b>supported</b>, <b>reclassified</b>
+    (possible, but the imagery looks like something else), <b>implausible</b>
+    (physical checks fail) and <b>contradicted</b> (both). The system no longer
+    certifies a flood in a desert, and it explains why in the language of the
+    physics rather than a score.</p>
+  </div>
 </section>
 
 <!-- ─────────────────────────── 9 ─────────────────────────── -->
@@ -578,8 +594,8 @@ footer{font-family:var(--sans);font-size:13.5px;color:var(--dim);
     <tbody>
       <tr><td>Semantic + image-to-image retrieval</td><td><span class="tag t-warn">partial</span></td>
           <td>Works, but only across past detections — not every archive tile</td></tr>
-      <tr><td>Classify change type</td><td><span class="tag t-bad">missing</span></td>
-          <td>We test the type you asked for; we never classify independently. This is the flood failure</td></tr>
+      <tr><td>Classify change type</td><td><span class="tag t-ok">done</span></td>
+          <td>Each detection classified from its own evidence, with physical gates and a verdict</td></tr>
       <tr><td>False-alarm suppression</td><td><span class="tag t-ok">strong</span></td>
           <td>Seasonal model, permutation null, FDR control, cloud masks</td></tr>
       <tr><td>Clustering of similar sites</td><td><span class="tag t-bad">missing</span></td>

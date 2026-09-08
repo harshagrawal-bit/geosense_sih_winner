@@ -1,20 +1,30 @@
-INFO:     Started server process [103533]
+INFO:     Started server process [110584]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
 INFO:     Uvicorn running on http://127.0.0.1:8008 (Press CTRL+C to quit)
-INFO:     127.0.0.1:35770 - "GET /api/sources HTTP/1.1" 200 OK
-INFO:     127.0.0.1:35786 - "GET /api/sources HTTP/1.1" 200 OK
-INFO:     127.0.0.1:35798 - "POST /api/run HTTP/1.1" 200 OK
-INFO:     127.0.0.1:35806 - "GET /api/job/29158a7d48fd HTTP/1.1" 200 OK
+INFO:     127.0.0.1:37566 - "GET /api/sources HTTP/1.1" 200 OK
+INFO:     127.0.0.1:37572 - "GET /api/sources HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47428 - "POST /api/run HTTP/1.1" 200 OK
+INFO:     127.0.0.1:47444 - "GET /api/job/e2fa2981ba96 HTTP/1.1" 200 OK
 Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
-Loading weights:   0%|          | 0/103 [00:00<?, ?it/s]Loading weights: 100%|██████████| 103/103 [00:00<00:00, 3282.15it/s]
-INFO:     127.0.0.1:54032 - "GET /api/job/29158a7d48fd HTTP/1.1" 200 OK
-INFO:     127.0.0.1:43684 - "GET /api/job/29158a7d48fd HTTP/1.1" 200 OK
-INFO:     127.0.0.1:44350 - "GET /api/job/29158a7d48fd HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52040 - "GET /api/job/29158a7d48fd HTTP/1.1" 200 OK
-INFO:     127.0.0.1:48020 - "GET /api/job/29158a7d48fd HTTP/1.1" 200 OK
-INFO:     127.0.0.1:57918 - "GET /api/job/29158a7d48fd HTTP/1.1" 200 OK
-INFO:     127.0.0.1:56960 - "GET /api/job/29158a7d48fd HTTP/1.1" 200 OK
-INFO:     127.0.0.1:45112 - "GET /api/job/29158a7d48fd HTTP/1.1" 200 OK
-INFO:     127.0.0.1:45128 - "GET /api/job/29158a7d48fd HTTP/1.1" 200 OK
-INFO:     127.0.0.1:38950 - "GET /chips/20260908T002308/c1010_before.png HTTP/1.1" 200 OK
+Loading weights:   0%|          | 0/103 [00:00<?, ?it/s]Loading weights: 100%|██████████| 103/103 [00:00<00:00, 2728.80it/s]
+INFO:     127.0.0.1:36630 - "GET /api/job/e2fa2981ba96 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36874 - "GET /api/job/e2fa2981ba96 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38018 - "GET /api/job/e2fa2981ba96 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42538 - "GET /api/job/e2fa2981ba96 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:36846 - "GET /api/job/e2fa2981ba96 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54876 - "GET /api/job/e2fa2981ba96 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34850 - "GET /api/job/e2fa2981ba96 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33834 - "GET /api/job/e2fa2981ba96 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33842 - "GET /api/job/e2fa2981ba96 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33738 - "GET /?job=e2fa2981ba96 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33738 - "GET /static/vendor/maplibre-gl.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33744 - "GET /static/vendor/maplibre-gl.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33744 - "GET /api/job/e2fa2981ba96 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33738 - "GET /api/semantic HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33744 - "GET /chips/20260908T073655/before.png HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33738 - "GET /chips/20260908T073655/after.png HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33752 - "GET /chips/20260908T073655/c0300_before.png HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33764 - "GET /chips/20260908T073655/c0300_after.png HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33746 - "GET /api/runs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:33746 - "GET /favicon.ico HTTP/1.1" 404 Not Found

@@ -303,7 +303,7 @@ def delta_scores(before_chips, after_chips, qvec, return_vectors=False):
     if a is None or b is None:
         return (None, None) if return_vectors else None
     scores = (a @ qvec) - (b @ qvec)
-    return (scores, a) if return_vectors else scores
+    return (scores, a, b) if return_vectors else scores
 
 
 def probe() -> dict:
@@ -346,3 +346,37 @@ def probe() -> dict:
             "loaded": _state["model"] is not None,
             "state": state,
             "model": f"RemoteCLIP {MODEL_NAME}" if installed else None}
+
+
+def classify_change(before_vecs, after_vecs):
+    """What kind of change is this, judged from the imagery itself?
+
+    The query classifier reads the *question*; this reads the *answer*. Each
+    class prompt is scored the same way the re-ranker scores a query - by how
+    much the scene moved toward it - so a place that merely already looks like
+    a city does not win the "construction" class.
+
+    Returns one dict per candidate, or None if the model is unavailable.
+    """
+    import numpy as np
+    if before_vecs is None or after_vecs is None or not load():
+        return None
+    keys = list(CHANGE_CLASSES)
+    prompts = [encode_text(SIGNATURE_PROMPTS[k], CHANGE_CLASSES[k]["label"])
+               for k in keys]
+    if any(v is None for v in prompts):
+        return None
+    P = np.stack(prompts)
+
+    out = []
+    deltas = (np.asarray(after_vecs) @ P.T) - (np.asarray(before_vecs) @ P.T)
+    for row in deltas:
+        order = np.argsort(-row)
+        ranked = [{"class": keys[i], "label": CHANGE_CLASSES[keys[i]]["label"],
+                   "score": round(float(row[i]), 4)} for i in order[:3]]
+        margin = float(row[order[0]] - row[order[1]])
+        out.append({"predicted": ranked[0]["class"], "label": ranked[0]["label"],
+                    "score": ranked[0]["score"], "margin": round(margin, 4),
+                    "confident": bool(margin >= 0.01), "ranked": ranked,
+                    "source": _state["backend"]})
+    return out
