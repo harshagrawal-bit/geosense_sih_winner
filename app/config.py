@@ -80,6 +80,14 @@ POSTGRES_DSN = os.getenv("GEOSENSE_POSTGRES_DSN")
 GRID_PX = 256
 CELL    = 16
 
+# Chips are re-read at this width once the detections are known. The analysis
+# grid is deliberately coarse - the statistics need a time series per cell, not
+# detail - but a 256 px read over a 9 km AOI is ~35 m per pixel, and Sentinel-2
+# is 10 m. Reviewing evidence at a third of the sensor's resolution wastes the
+# imagery, so the review pass reads it properly.
+DETAIL_PX    = 768
+DETAIL_DATES = 12          # cap on the extra reads, evenly spread in time
+
 MAX_SCENES   = 40     # per sensor, per request
 CLOUD_LIMIT  = 60     # scene-level cloud cover % to even consider
 os.makedirs(CACHE_DIR, exist_ok=True)

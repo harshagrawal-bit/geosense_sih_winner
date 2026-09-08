@@ -110,10 +110,24 @@ def mask_bbox(mask: np.ndarray, window_bbox) -> list | None:
             lw + (le - lw) * (xs.max() + 1) / w, ln - (ln - ls) * ys.min() / h]
 
 
-def outline_png(rgb: np.ndarray, mask: np.ndarray, path: str, size: int = 320):
-    """The after-chip with the changed extent outlined."""
+def outline_png(rgb: np.ndarray, mask: np.ndarray, path: str, size: int = 640):
+    """The after-chip with the changed extent outlined.
+
+    The mask comes from the coarse analysis grid while the chip may have been
+    re-read at review resolution, so upscale the mask to the chip rather than
+    assuming the two agree.
+    """
     from PIL import Image
     a = np.nan_to_num(np.asarray(rgb, dtype="float32"), nan=0.0)
+    mask = np.asarray(mask, bool)
+    if mask.shape != a.shape[:2]:
+        fy = max(a.shape[0] // max(mask.shape[0], 1), 1)
+        fx = max(a.shape[1] // max(mask.shape[1], 1), 1)
+        up = mask.repeat(fy, 0).repeat(fx, 1)
+        fit = np.zeros(a.shape[:2], bool)
+        h, w = min(fit.shape[0], up.shape[0]), min(fit.shape[1], up.shape[1])
+        fit[:h, :w] = up[:h, :w]
+        mask = fit
     a = np.clip(a / 0.30, 0, 1) ** (1 / 1.5)
     img = (a * 255).astype("uint8")
 

@@ -7,7 +7,7 @@ import numpy as np
 from . import catalog, raster, change, query as Q, rank, provenance
 from . import semantic as clip_tier   # aliased: `semantic` is a local below
 from . import segment, classify
-from .config import SOURCES, CELL, GRID_PX, CACHE_DIR
+from .config import SOURCES, CELL, GRID_PX, CACHE_DIR, DETAIL_PX, DETAIL_DATES
 from .contracts import (CatalogPort, ConfirmationPort, ImageryPort, ProvenancePort,
                         RankingPort, SarEvidencePort, SemanticRetrievalPort,
                         TemporalDetectionPort)
@@ -224,6 +224,49 @@ def run(bbox, text, months=None, alpha=0.10, sources=("sentinel-2-l2a",),
 
     # ------------------------------------------------------- 6. chips -----
     outdir = os.path.join(CACHE_DIR, run_id)
+
+    # Review pass: re-read the AOI at DETAIL_PX for the dates that matter, so
+    # evidence is inspected near the sensor's real resolution instead of the
+    # analysis grid's. Only RGB, only a capped number of dates.
+    detail = None
+    try:
+        pick = list(keep_idx)
+        if len(pick) > DETAIL_DATES:
+            step = len(pick) / DETAIL_DATES
+            pick = [pick[int(n * step)] for n in range(DETAIL_DATES)]
+        say("verify", 84, f"Re-reading {len(pick)} dates at {DETAIL_PX}px for review")
+        by_date = {d["datetime"][:10]: d for d in used}
+        jobs = []
+        for k in pick:
+            it = by_date.get(dates[k])
+            if it:
+                jobs.append((k, it))
+        if jobs:
+            from concurrent.futures import ThreadPoolExecutor
+            cfgb = SOURCES[jobs[0][1]["source"]]["bands"]
+
+            def _one(job):
+                k, it = job
+                out = {}
+                for c in ("red", "green", "blue"):
+                    a = raster.read_window(it["assets"].get(cfgb[c]), bbox,
+                                           out=DETAIL_PX)
+                    if a is None:
+                        return None
+                    sc = it.get("scales", {}).get(cfgb[c]) \
+                        if SOURCES[it["source"]].get("trust_stac_scale", True) else None
+                    out[c] = raster._scale(a, SOURCES[it["source"]], sc)
+                return k, out
+
+            with ThreadPoolExecutor(max_workers=6) as ex:
+                got = [r for r in ex.map(_one, jobs) if r]
+            if got:
+                detail = {"scale": DETAIL_PX / GRID_PX,
+                          "idx": [k for k, _ in got],
+                          "bands": {c: np.stack([o[c] for _, o in got])
+                                    for c in ("red", "green", "blue")}}
+    except Exception as ex:
+        say("verify", 85, f"Detail pass skipped: {str(ex)[:60]}")
     os.makedirs(outdir, exist_ok=True)
     split_date = split_pre
     di = [i for i, d in enumerate(dates) if d in kept_dates]
@@ -265,14 +308,23 @@ def run(bbox, text, months=None, alpha=0.10, sources=("sentinel-2-l2a",),
         post_k = list(keep_idx[bi:]) or list(keep_idx[-1:])
 
         def med(idxs, box):
+            """Median composite for a crop, at review resolution when available."""
+            if detail:
+                keep = [n for n, k in enumerate(detail["idx"]) if k in idxs]
+                if keep:
+                    f = detail["scale"]
+                    hb = (slice(int(box[0].start * f), int(box[0].stop * f)),
+                          slice(int(box[1].start * f), int(box[1].stop * f)))
+                    return {c: np.nanmedian(detail["bands"][c][keep][(slice(None),) + hb],
+                                            axis=0) for c in ("red", "green", "blue")}
             return {c: np.nanmedian(st[c][idxs][(slice(None),) + box], axis=0)
                     for c in ("red", "green", "blue")}
 
         img_pre, img_post = med(pre_k, sl), med(post_k, sl)
         sp = dependencies.imagery.rgb_png(img_pre,
-                            os.path.join(outdir, f"c{cid}_before.png"), size=320)
+                            os.path.join(outdir, f"c{cid}_before.png"), size=640)
         dependencies.imagery.rgb_png(img_post,
-                       os.path.join(outdir, f"c{cid}_after.png"), size=320,
+                       os.path.join(outdir, f"c{cid}_after.png"), size=640,
                        stretch=sp)
         # CLIP gets a wider crop than the evidence panel does. A 32 px patch
         # carries almost no context and CLIP was trained on whole scenes, so
@@ -292,8 +344,14 @@ def run(bbox, text, months=None, alpha=0.10, sources=("sentinel-2-l2a",),
         strip = []
         for k in keep_idx:
             fn = f"c{cid}_t{k:02d}.png"
+            frame = None
+            if detail and k in detail["idx"]:
+                n = detail["idx"].index(k); f = detail["scale"]
+                hb = (slice(int(sl[0].start * f), int(sl[0].stop * f)),
+                      slice(int(sl[1].start * f), int(sl[1].stop * f)))
+                frame = {c: detail["bands"][c][n][hb] for c in ("red", "green", "blue")}
             dependencies.imagery.rgb_png(
-                {c: st[c][k][sl] for c in ("red", "green", "blue")},
+                frame or {c: st[c][k][sl] for c in ("red", "green", "blue")},
                 os.path.join(outdir, fn), size=150)
             # How much of this crop actually survived cloud masking. A frame
             # that is 70% black is not evidence, and the reviewer should be
